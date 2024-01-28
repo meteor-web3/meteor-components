@@ -1,0 +1,7 @@
+node_modules
+dist
+public
+resources
+scripts
+stories
+vite.config.js
