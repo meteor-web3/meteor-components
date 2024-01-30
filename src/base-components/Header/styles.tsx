@@ -72,6 +72,7 @@ export const LinkBox = styled.div`
 `;
 export const ImgLogo = styled.img`
   width: 30px;
+  border-radius: 50%;
   cursor: pointer;
 `;
 export const ImgLogoTxt = styled.p`

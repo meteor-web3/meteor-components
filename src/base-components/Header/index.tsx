@@ -16,7 +16,7 @@ import {
 import { Avatar } from "../Avatar";
 
 import closeIcon from "@/assets/icon/close.png";
-import Logo from "@/assets/icon/logo-header.svg";
+import Logo from "@/assets/icon/logo-header.png";
 
 export interface HeaderProps {
   /**
@@ -82,7 +82,7 @@ export const Header: React.FC<HeaderProps> = ({
       <RawHeaderDiv>
         <LeftBox>
           <ImgLogo src={Logo} onClick={onClickLogo} />
-          <ImgLogoTxt>MeteorOS</ImgLogoTxt>
+          <ImgLogoTxt>Meteor</ImgLogoTxt>
         </LeftBox>
         <RigBox>
           {customRightContent || (
