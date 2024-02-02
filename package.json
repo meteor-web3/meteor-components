@@ -1,6 +1,6 @@
 {
   "name": "@meteor-web3/components",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "types": "dist/esm/index.d.ts",
   "main": "dist/cjs/index.js",
   "module": "dist/esm/index.js",
@@ -27,11 +27,17 @@
     "react-dom": "^17.0.2"
   },
   "dependencies": {
-    "@meteor-web3/connector": "^1.0.0",
-    "@meteor-web3/hooks": "^1.0.1",
-    "@meteor-web3/utils": "^1.0.0",
+    "@arcstone/arcstone-sdk": "^1.0.3",
     "@emotion/is-prop-valid": "^1.2.1",
     "@google/model-viewer": "^3.2.1",
+    "@meteor-web3/connector": "^1.0.7",
+    "@meteor-web3/hooks": "^1.0.6",
+    "@meteor-web3/meteor-iframe": "^0.0.7",
+    "@meteor-web3/utils": "^1.0.0",
+    "@mui/icons-material": "^5.15.7",
+    "@mui/material": "^5.15.7",
+    "@privy-io/react-auth": "^1.55.1",
+    "@walletconnect/ethereum-provider": "^2.11.0",
     "framer-motion": "^6.5.1",
     "react-images-uploading": "^3.1.7",
     "three": "^0.154.0",

@@ -1,4 +1,4 @@
-import meteorLogo from "@/assets/icon/meteorLogo.svg";
+import meteorLogo from "@/assets/icon/meteorLogo.png";
 import { Avatar, AvatarProps } from "@/base-components/Avatar";
 import { Meta, StoryObj } from "@storybook/react";
 

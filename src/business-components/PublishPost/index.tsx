@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 
+import { DEPLOYED_ADDRESSES as TOKEN_DEPLOYED_ADDRESSES } from "@arcstone/arcstone-sdk/data-token";
 import { SerializedStyles, css } from "@emotion/react";
 import {
   useApp,
@@ -57,6 +58,7 @@ export interface PublishPostProps {
    * if not to set, will use env.VITE_WEB3STORAGE_TOKEN
    */
   web3StorageToken?: string;
+  chainId: number;
   cssStyle?: SerializedStyles;
   className?: string;
   style?: React.CSSProperties;
@@ -67,6 +69,7 @@ export const PublishPost: React.FC<PublishPostProps> = ({
   modelVersion,
   appId,
   web3StorageToken,
+  chainId,
   cssStyle,
   className,
   style,
@@ -219,12 +222,15 @@ export const PublishPost: React.FC<PublishPostProps> = ({
             },
           },
         });
+
         res = await monetizeFile({
           fileId: res.fileContent.file.fileId,
-          datatokenVars: {
-            currency: settings.currency!,
-            amount: settings.amount!,
-            collectLimit: settings.collectLimit!,
+          chainId,
+          actionsConfig: {
+            collectAction: {
+              currency: TOKEN_DEPLOYED_ADDRESSES[chainId].WMATIC,
+              amount: 1000,
+            },
           },
         });
         console.log(
