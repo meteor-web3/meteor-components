@@ -3,9 +3,15 @@ import { resolve } from "path";
 import inject from "@rollup/plugin-inject";
 import { defineConfig } from "vite";
 import dts from "vite-plugin-dts";
+import dotenv from "dotenv";
+import EnvironmentPlugin from "vite-plugin-environment";
+import RollupPluginDotenv from "rollup-plugin-dotenv";
 
+const env = dotenv.config();
 const config = defineConfig({
   plugins: [
+    // provider .env to process.env (only AVAILABLE in DEV mode)
+    EnvironmentPlugin(Object.keys(env.parsed)),
     dts({
       outDir: "dist/esm",
       tsconfigPath: resolve(__dirname, "./tsconfig.json"),
@@ -27,7 +33,11 @@ const config = defineConfig({
     minify: false,
     rollupOptions: {
       external: ["react", "react-dom", "react/jsx-runtime", "@emotion/react", "@emotion/react/jsx-runtime", "@emotion/styled"],
-      plugins: [inject({ Buffer: ["buffer", "Buffer"] })],
+      plugins: [
+        inject({ Buffer: ["buffer", "Buffer"] }),
+        // provider .env to process.env (only AVAILABLE in PROD mode)
+        RollupPluginDotenv(),
+      ],
       input: ["src/index.ts"],
       output: [
         {
@@ -59,14 +69,6 @@ const config = defineConfig({
     jsxFactory: "_jsx",
     jsxInject: `import { jsx as _jsx } from '@emotion/react'; import { Fragment as __Fragment } from 'react';`,
     jsxFragment: "__Fragment",
-  },
-  define: {
-    "process.env": {
-      ENV: "Browser",
-      METEOR_GOOGLE_STORE:
-        "https://chrome.google.com/webstore/detail/meteor/kcigpjcafekokoclamfendmaapcljead",
-      MUMBAI_FAUCET: "https://mumbaifaucet.com",
-    },
   },
   server: {
     port: 3008,

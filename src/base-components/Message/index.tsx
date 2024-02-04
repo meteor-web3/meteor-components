@@ -48,8 +48,8 @@ const MessageBottomComp = memo(function MessageBottomComp({
             type === MessageTypes.Error
               ? iconWarning
               : type === MessageTypes.Info
-              ? iconInfo
-              : iconCheck
+                ? iconInfo
+                : iconCheck
           }
           css={css`
             width: 36px;
@@ -69,8 +69,8 @@ const MessageBottomComp = memo(function MessageBottomComp({
               color: ${type === MessageTypes.Error
                 ? "#CB2424"
                 : type === MessageTypes.Info
-                ? " #000000"
-                : "#48A92F"};
+                  ? " #000000"
+                  : "#48A92F"};
             `}
           >
             {content}

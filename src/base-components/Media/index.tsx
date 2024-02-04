@@ -1,5 +1,3 @@
-import "@google/model-viewer";
-
 import {
   ReactNode,
   useCallback,

@@ -1,7 +1,7 @@
 /* eslint-disable no-case-declarations */
 import React, { useEffect, useState } from "react";
 
-import "@meteor-web3/meteor-iframe";
+// import "@meteor-web3/meteor-iframe";
 // import { CoinbaseWalletSDK } from "@coinbase/wallet-sdk";
 import {
   Chain,
@@ -122,7 +122,7 @@ export const WalletList = ({
   walletConfig,
   onConnect,
   onDisconnect,
-  getConnectorInstance
+  getConnectorInstance,
 }: WalletListProps) => {
   const [connecting, setConnecting] = useState<boolean>(false);
   const [selectedProvider, setSelectedProvider] = useState<
@@ -165,16 +165,7 @@ export const WalletList = ({
           break;
         case "meteor-web":
           if (!meteorWebProvider || meteorWebProvider.destroyed) {
-            const iframe = document.getElementById(
-              "meteor-iframe",
-            ) as HTMLIFrameElement;
-            if (!iframe) {
-              throw "Meteor Web wallet failed to load or has not been loaded yet.";
-            }
-            meteorWebProvider = new MeteorWebProvider(
-              iframe.contentWindow!,
-              window.ethereum,
-            );
+            meteorWebProvider = new MeteorWebProvider();
           }
           provider = meteorWebProvider;
           break;
@@ -201,6 +192,9 @@ export const WalletList = ({
         userInfo?: any;
       };
       if (selectedProvider !== "meteor-web") {
+        if (wallet === WALLET.METAMASK && !window.ethereum) {
+          throw "MetaMask is not installed or not enabled.";
+        }
         connectRes = await meteorConnector.connectWallet({
           wallet: wallet === "google" ? WALLET.PARTICLE : wallet,
           preferredAuthType: wallet === "google" ? "google" : undefined,
@@ -236,6 +230,9 @@ export const WalletList = ({
         } else {
           switch (wallet) {
             case WALLET.METAMASK:
+              if (!window.ethereum) {
+                throw "MetaMask is not installed or not enabled.";
+              }
               ethereumProvider = window.ethereum;
               break;
             // case WALLET.COINBASE:
