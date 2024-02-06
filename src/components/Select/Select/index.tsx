@@ -5,8 +5,8 @@ import { SerializedStyles } from "@emotion/react";
 import { SelectWrap } from "./SelectWrap";
 
 import iconDown from "@/assets/icon/down.svg";
-import { Input } from "@/base-components/Input";
-import { useClickOutside } from "@/base-components/Modal/hooks/useClickOutSide";
+import { Input } from "@/components/Input";
+import { useClickOutside } from "@/components/Modal/hooks/useClickOutSide";
 import { uuid } from "@/utils/uuid";
 
 interface OptionProps {

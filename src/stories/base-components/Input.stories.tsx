@@ -1,4 +1,4 @@
-import { Input, InputProps } from "@/base-components/Input";
+import { Input, InputProps } from "@/components/Input";
 import { Meta, StoryObj } from "@storybook/react";
 
 const meta = {

@@ -11,7 +11,7 @@ const env = dotenv.config();
 const config = defineConfig({
   plugins: [
     // provider .env to process.env (only AVAILABLE in DEV mode)
-    EnvironmentPlugin(Object.keys(env.parsed)),
+    ...(env.parsed ? [EnvironmentPlugin(Object.keys(env.parsed))]: []),
     dts({
       outDir: "dist/esm",
       tsconfigPath: resolve(__dirname, "./tsconfig.json"),

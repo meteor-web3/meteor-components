@@ -1,8 +1,8 @@
-import { BottomTabBar } from "@/base-components/BottomTabBar";
+import { BottomTabBar } from "@/components/BottomTabBar";
 import { Meta, StoryObj } from "@storybook/react";
 import iconInfo from "@/assets/icon/blackInfo.svg";
 import { css } from "@emotion/react";
-import { Button } from "@/base-components/Button";
+import { Button } from "@/components/Button";
 import iconUnlock from "@/assets/icon/unlock.svg";
 
 const meta = {

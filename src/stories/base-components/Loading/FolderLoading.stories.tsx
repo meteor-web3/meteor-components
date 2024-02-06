@@ -1,4 +1,4 @@
-import { FolderLoading, FolderLoadingProps } from "@/base-components/Loading";
+import { FolderLoading, FolderLoadingProps } from "@/components/Loading";
 
 import { Meta, StoryObj } from "@storybook/react";
 

@@ -1,4 +1,4 @@
-import { ReadMore, ReadMoreProps } from "@/base-components";
+import { ReadMore, ReadMoreProps } from "@/components";
 import { Meta, StoryObj } from "@storybook/react";
 
 const meta = {

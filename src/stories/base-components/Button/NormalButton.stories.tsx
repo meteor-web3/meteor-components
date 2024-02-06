@@ -1,4 +1,4 @@
-import { NormalButton, NormalButtonProps } from "@/base-components/Button";
+import { NormalButton, NormalButtonProps } from "@/components/Button";
 import { css } from "@emotion/react";
 import { Meta, StoryObj } from "@storybook/react";
 import iconClose from "@/assets/icon/close.svg";

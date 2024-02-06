@@ -1,4 +1,4 @@
-import { ImageLoading, ImageLoadingProps } from "@/base-components/Loading";
+import { ImageLoading, ImageLoadingProps } from "@/components/Loading";
 
 import { Meta, StoryObj } from "@storybook/react";
 

@@ -1,5 +1,5 @@
-import { Button } from "@/base-components/Button";
-import { NormalModal, NormalModalProps } from "@/base-components/Modal";
+import { Button } from "@/components/Button";
+import { NormalModal, NormalModalProps } from "@/components/Modal";
 import { uuid } from "@/utils/uuid";
 import { Meta, StoryObj } from "@storybook/react";
 

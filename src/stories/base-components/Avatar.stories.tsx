@@ -1,5 +1,5 @@
 import meteorLogo from "@/assets/icon/meteorLogo.png";
-import { Avatar, AvatarProps } from "@/base-components/Avatar";
+import { Avatar, AvatarProps } from "@/components/Avatar";
 import { Meta, StoryObj } from "@storybook/react";
 
 const meta = {

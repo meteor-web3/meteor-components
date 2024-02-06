@@ -7,7 +7,7 @@ import {
   Chain,
   Connector,
   BaseProvider,
-  DataverseSnapProvider,
+  MeteorSnapProvider,
   MeteorWalletProvider,
   MeteorWebProvider,
   SYSTEM_CALL,
@@ -38,18 +38,24 @@ export type WalletConfig = {
 };
 
 export interface AuthProps {
+  appId?: string;
   walletConfig?: WalletConfig;
   getConnectorInstance?: (meteorConnector: Connector) => void;
 }
 
-export let appId = "9aaae63f-3445-47d5-8785-c23dd16e4965";
-
 let meteorConnector: Connector;
-let snapProvider: DataverseSnapProvider;
+let snapProvider: MeteorSnapProvider;
 let meteorWalletProvider: MeteorWalletProvider;
 let meteorWebProvider: MeteorWebProvider;
+const testAppId = "9aaae63f-3445-47d5-8785-c23dd16e4965";
 
-export const Auth = ({ walletConfig, getConnectorInstance }: AuthProps) => {
+export const Auth = ({
+  appId, // if domain is not localhost, appId will be used from dapp table registry recording to website
+  walletConfig = {
+    enabled: { dataverseSnap: true, meteorWallet: true, meteorWeb: true },
+  },
+  getConnectorInstance,
+}: AuthProps) => {
   const [connectRes, setConnectRes] = useState<ConnectRes>();
 
   return (
@@ -83,6 +89,7 @@ export const Auth = ({ walletConfig, getConnectorInstance }: AuthProps) => {
           </div>
         )}
         <WalletList
+          appId={appId}
           walletConfig={walletConfig}
           onConnect={setConnectRes}
           onDisconnect={() => setConnectRes(undefined)}
@@ -112,6 +119,7 @@ export type SupportedWallet =
   | (typeof WALLET)["METAMASK" | "WALLETCONNECT"];
 
 export interface WalletListProps {
+  appId?: string;
   walletConfig?: WalletConfig;
   onConnect?: (connectRes: ConnectRes) => void;
   onDisconnect?: () => void;
@@ -119,6 +127,7 @@ export interface WalletListProps {
 }
 
 export const WalletList = ({
+  appId,
   walletConfig,
   onConnect,
   onDisconnect,
@@ -153,7 +162,7 @@ export const WalletList = ({
             if (!snapOrigin) {
               throw "Please input your snap server url.";
             }
-            snapProvider = new DataverseSnapProvider("local:" + snapOrigin);
+            snapProvider = new MeteorSnapProvider("local:" + snapOrigin);
           }
           provider = snapProvider;
           break;
@@ -179,6 +188,8 @@ export const WalletList = ({
             hostname: location.hostname,
           });
           appId = appInfo.id;
+        } else {
+          appId = testAppId;
         }
       } else {
         meteorConnector.setProvider(provider);
@@ -281,7 +292,7 @@ export const WalletList = ({
       const { pkh } = await meteorConnector.runOS({
         method: SYSTEM_CALL.createCapability,
         params: {
-          appId,
+          appId: appId!,
         },
       });
       // setConnected(true);

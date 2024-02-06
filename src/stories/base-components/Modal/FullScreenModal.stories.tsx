@@ -1,4 +1,4 @@
-import { Button } from "@/base-components/Button";
+import { Button } from "@/components/Button";
 import { FullScreenModal } from "@/index";
 import { css } from "@emotion/react";
 import { Meta, StoryObj } from "@storybook/react";

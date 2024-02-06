@@ -14,8 +14,8 @@ import { createPortal } from "react-dom";
 import { FullScreenMask } from "./style";
 
 import iconClose from "@/assets/icon/close.svg";
-import { NormalButton } from "@/base-components/Button/NormalButton";
-import usePortal from "@/base-components/Modal/hooks/usePortal";
+import { NormalButton } from "@/components/Button/NormalButton";
+import usePortal from "@/components/Modal/hooks/usePortal";
 import { uuid } from "@/utils/uuid";
 
 export interface FullScreenModalProps {

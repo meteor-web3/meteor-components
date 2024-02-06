@@ -1,4 +1,4 @@
-import { SmallButton, SmallButtonProps } from "@/base-components/Button/SmallButton";
+import { SmallButton, SmallButtonProps } from "@/components/Button/SmallButton";
 import { Meta, StoryObj } from "@storybook/react";
 import iconRefresh from "@/assets/icon/refresh.png";
 import iconShare from "@/assets/icon/share.png";

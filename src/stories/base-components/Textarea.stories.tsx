@@ -1,4 +1,4 @@
-import { Textarea, TextareaProps } from "@/base-components";
+import { Textarea, TextareaProps } from "@/components";
 import { Meta, StoryObj } from "@storybook/react";
 
 const meta = {

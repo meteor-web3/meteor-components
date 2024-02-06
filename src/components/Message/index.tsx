@@ -6,7 +6,7 @@ import ReactDOM from "react-dom";
 import iconInfo from "@/assets/icon/blackInfo.svg";
 import iconCheck from "@/assets/icon/greenCheck.svg";
 import iconWarning from "@/assets/icon/redError.svg";
-import { BottomTabBar } from "@/base-components/BottomTabBar";
+import { BottomTabBar } from "@/components/BottomTabBar";
 
 export enum MessageTypes {
   Success = "Success",

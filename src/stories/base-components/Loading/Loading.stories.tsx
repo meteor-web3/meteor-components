@@ -1,4 +1,4 @@
-import { Loading } from "@/base-components/Loading";
+import { Loading } from "@/components/Loading";
 
 import { Meta, StoryObj } from "@storybook/react";
 

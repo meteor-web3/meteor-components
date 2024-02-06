@@ -6,8 +6,8 @@ import { createPortal } from "react-dom";
 import { ModalWrap } from "./ModalWrap";
 
 import { Button } from "@";
-import { useClickOutside } from "@/base-components/Modal/hooks/useClickOutSide";
-import usePortal from "@/base-components/Modal/hooks/usePortal";
+import { useClickOutside } from "@/components/Modal/hooks/useClickOutSide";
+import usePortal from "@/components/Modal/hooks/usePortal";
 import { uuid } from "@/utils/uuid";
 
 export interface CardModalProps {

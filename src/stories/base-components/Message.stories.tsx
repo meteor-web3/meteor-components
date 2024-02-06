@@ -1,5 +1,5 @@
-import { Button } from "@/base-components/Button/Button";
-import { message, MessageProps, MessageTypes } from "@/base-components/Message";
+import { Button } from "@/components/Button/Button";
+import { message, MessageProps, MessageTypes } from "@/components/Message";
 import { Meta, StoryObj } from "@storybook/react";
 
 const Message: React.FC<MessageProps> = ({

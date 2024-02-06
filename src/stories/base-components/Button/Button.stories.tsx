@@ -1,4 +1,4 @@
-import { Button, ButtonProps } from "@/base-components/Button";
+import { Button, ButtonProps } from "@/components/Button";
 import { Meta, StoryObj } from "@storybook/react";
 
 const meta = {
