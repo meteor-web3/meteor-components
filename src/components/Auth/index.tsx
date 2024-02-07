@@ -135,6 +135,7 @@ export interface AuthProps {
     meteorConnector: Connector,
     connectRes: ConnectRes,
   ) => void;
+  onClose?: () => void;
 }
 
 let meteorConnector: Connector;
@@ -153,6 +154,7 @@ export const Auth = ({
   },
   authRef,
   onConnectSucceed,
+  onClose,
 }: AuthProps) => {
   const [connectRes, setConnectRes] = useState<ConnectRes>();
   const [selectedProvider, setSelectedProvider] = useState<SupportedProvider>();
@@ -201,6 +203,7 @@ export const Auth = ({
             onConnectSucceed?.(connector, connectRes);
           }}
           onDisconnect={() => setConnectRes(undefined)}
+          onClose={onClose}
         />
       </div>
     </EmbedWalletContainer>
@@ -330,6 +333,7 @@ export interface DetailProps {
   authRef?: AuthRef;
   onConnect?: (meteorConnector: Connector, connectRes: ConnectRes) => void;
   onDisconnect?: () => void;
+  onClose?: () => void;
 }
 
 export const Detail = ({
@@ -339,6 +343,7 @@ export const Detail = ({
   setSelectedProvider,
   onConnect,
   onDisconnect,
+  onClose,
 }: DetailProps) => {
   const [connecting, setConnecting] = useState<boolean>(false);
   const [connectedWallet, setConnectedWallet] = useState<SupportedWallet>();
@@ -586,7 +591,7 @@ export const Detail = ({
 
   return (
     <DetailContainer>
-      <img src={closeSVG} className='close' />
+      <img src={closeSVG} className='close' onClick={() => onClose?.()} />
       {selectedProvider === "meteor-wallet" ? (
         <MeteorWalletDetail handleConnectWallet={handleConnectWallet} />
       ) : selectedProvider === "meteor-web" ? (
@@ -777,7 +782,7 @@ Auth.Model = function AuthModel({
     }
   }, [controlVisible]);
 
-  const handleCancel = async () => {
+  const handleCancel = () => {
     onCancel?.();
     if (controlVisible === undefined) {
       setVisible(false);
@@ -796,6 +801,7 @@ Auth.Model = function AuthModel({
     >
       <Auth
         {...authProps}
+        onClose={handleCancel}
         onConnectSucceed={(meteorConnector, connectRes) => {
           authProps?.onConnectSucceed?.(meteorConnector, connectRes);
           handleCancel();
