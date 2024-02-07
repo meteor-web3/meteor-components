@@ -74,8 +74,12 @@ export interface AuthProps {
    * When any item in params is updated, this function will be called.
    */
   authRef?: (params: {
-    connectWallet: (wallet: SupportedWallet) => Promise<void>;
+    connectWallet: (
+      wallet: SupportedWallet,
+      providerType: SupportedProvider,
+    ) => Promise<void>;
     connecting: boolean;
+    selectedProvider?: SupportedProvider;
     connectedWallet?: SupportedWallet;
   }) => void;
   /**
@@ -181,12 +185,22 @@ export type SupportedWallet =
   | "google"
   | (typeof WALLET)["METAMASK" | "WALLETCONNECT"];
 
+export type SupportedProvider = "meteor-wallet" | "meteor-web" | "meteor-snap";
+
 export interface WalletListProps {
   appId?: string;
   walletConfig?: WalletConfig;
+  /**
+   * Provides a core method and state call without UI component control.
+   * When any item in params is updated, this function will be called.
+   */
   authRef?: (params: {
-    connectWallet: (wallet: SupportedWallet) => Promise<void>;
+    connectWallet: (
+      wallet: SupportedWallet,
+      providerType: SupportedProvider,
+    ) => Promise<void>;
     connecting: boolean;
+    selectedProvider?: SupportedProvider;
     connectedWallet?: SupportedWallet;
   }) => void;
   onConnect?: (meteorConnector: Connector, connectRes: ConnectRes) => void;
@@ -201,9 +215,7 @@ export const WalletList = ({
   onDisconnect,
 }: WalletListProps) => {
   const [connecting, setConnecting] = useState<boolean>(false);
-  const [selectedProvider, setSelectedProvider] = useState<
-    "meteor-wallet" | "meteor-web"
-  >();
+  const [selectedProvider, setSelectedProvider] = useState<SupportedProvider>();
   const [connectedWallet, setConnectedWallet] = useState<SupportedWallet>();
   // const [waitForPrivyConnecting, setWaitForPrivyConnecting] =
   //   useState<boolean>(false);
@@ -217,42 +229,47 @@ export const WalletList = ({
   // const { logout: privyLogout } = useLogout();
   // const { createWallet: privyCreateWallet } = useCreateWallet();
 
-  const handleConnectWallet = async (wallet: SupportedWallet) => {
+  const handleConnectWallet = async (
+    wallet: SupportedWallet,
+    providerType: SupportedProvider | undefined = selectedProvider,
+  ) => {
+    setSelectedProvider(providerType);
     setConnecting(true);
     try {
       // init provider and connector
-      let provider: BaseProvider;
-      switch (selectedProvider) {
-        case undefined:
-          if (!snapProvider || snapProvider.destroyed) {
-            const snapOrigin = prompt(
-              "Please input your snap server url:",
-              "http://localhost:8080",
-            );
-            if (!snapOrigin) {
-              throw "Please input your snap server url.";
-            }
-            snapProvider = new MeteorSnapProvider("local:" + snapOrigin);
-          }
-          provider = snapProvider;
-          break;
+      let baseProvider: BaseProvider;
+      switch (providerType) {
         case "meteor-wallet":
           if (!meteorWalletProvider || meteorWalletProvider.destroyed) {
             meteorWalletProvider = new MeteorWalletProvider();
           }
-          provider = meteorWalletProvider;
+          baseProvider = meteorWalletProvider;
           break;
         case "meteor-web":
           if (!meteorWebProvider || meteorWebProvider.destroyed) {
             meteorWebProvider = new MeteorWebProvider();
           }
-          provider = meteorWebProvider;
+          baseProvider = meteorWebProvider;
           break;
+        case "meteor-snap":
+          // if (!snapProvider || snapProvider.destroyed) {
+          //   const snapOrigin = prompt(
+          //     "Please input your snap server url:",
+          //     "http://localhost:8080",
+          //   );
+          //   if (!snapOrigin) {
+          //     throw "Please input your snap server url.";
+          //   }
+          //   snapProvider = new MeteorSnapProvider("local:" + snapOrigin);
+          // }
+          // provider = snapProvider;
+          // break;
+          throw "Coming soon...";
         default:
           throw "Unsupported provider.";
       }
       if (!meteorConnector) {
-        meteorConnector = new Connector(provider);
+        meteorConnector = new Connector(baseProvider);
         if (!appId) {
           if (location.hostname !== "localhost") {
             const appInfo = await meteorConnector.getDAppInfo({
@@ -264,7 +281,7 @@ export const WalletList = ({
           }
         }
       } else {
-        meteorConnector.setProvider(provider);
+        meteorConnector.setProvider(baseProvider);
       }
       // connect the real wallet
       let connectRes: {
@@ -436,9 +453,16 @@ export const WalletList = ({
     authRef?.({
       connectWallet: handleConnectWallet,
       connecting,
+      selectedProvider,
       connectedWallet,
     });
-  }, [authRef, handleConnectWallet, connecting, connectedWallet]);
+  }, [
+    authRef,
+    handleConnectWallet,
+    connecting,
+    selectedProvider,
+    connectedWallet,
+  ]);
 
   const walletProviders = (
     <>
@@ -452,7 +476,7 @@ export const WalletList = ({
           data-disabled={walletConfig?.enabled?.dataverseSnap === false}
           data-unavailable={true}
           onClick={() => {
-            // handleConnectWallet(WALLET.METAMASK)
+            // handleConnectWallet(WALLET.METAMASK, "meteor-snap");
             message.info("Coming soon...");
           }}
         >
@@ -502,7 +526,7 @@ export const WalletList = ({
       <div
         className='wallet-item'
         data-disabled={walletConfig?.enabled?.dataverseSnap === false}
-        onClick={handleConnectWallet.bind(null, "google")}
+        onClick={() => handleConnectWallet("google")}
       >
         <img
           className='wallet-logo'
@@ -516,7 +540,7 @@ export const WalletList = ({
       <div
         className='wallet-item'
         data-disabled={walletConfig?.enabled?.dataverseSnap === false}
-        onClick={handleConnectWallet.bind(null, WALLET.METAMASK)}
+        onClick={() => handleConnectWallet(WALLET.METAMASK)}
       >
         <img
           className='wallet-logo'
@@ -549,7 +573,7 @@ export const WalletList = ({
       <div
         className='wallet-item'
         data-disabled={walletConfig?.enabled?.dataverseSnap === false}
-        onClick={handleConnectWallet.bind(null, WALLET.WALLETCONNECT)}
+        onClick={() => handleConnectWallet(WALLET.WALLETCONNECT)}
       >
         <img
           className='wallet-logo'
@@ -601,7 +625,7 @@ export const WalletList = ({
             <ArrowBackIcon className='wallet-logo' />
             Reconnect another wallet
           </div>
-        ) : selectedProvider ? (
+        ) : selectedProvider && selectedProvider !== "meteor-snap" ? (
           walletList
         ) : (
           walletProviders
@@ -673,7 +697,7 @@ Auth.Model = function AuthModel({
  *
  * @returns ConnectRes if auth success, otherwise void
  */
-Auth.openModal = (meteorContext?: MeteorContextType, authProps?: AuthProps) => {
+Auth.openModal = (authProps?: AuthProps, meteorContext?: MeteorContextType) => {
   return new Promise<ConnectRes | void>((resolve, reject) => {
     try {
       const container = document.createElement("div");
@@ -712,4 +736,75 @@ Auth.openModal = (meteorContext?: MeteorContextType, authProps?: AuthProps) => {
       reject(e);
     }
   });
+};
+
+/**
+ * Providing a functional authentication method will not generate any UI components, but let developers choose how to connect.
+ */
+export const useAuth = (
+  /**
+   * If the appId is not set, it will be inferred based on the website domain.
+   * If domain is not localhost, appId will be used from dapp table registry recording to website,
+   * otherwise it will be setting to testAppId.
+   */
+  appId?: string,
+  /**
+   * If you want to use it with meteor-hooks, you must provide meteorContext (used to pass status information), otherwise set meteorContext to undefined/falsy.
+   */
+  meteorContext?: MeteorContextType,
+) => {
+  const [connectWallet, setConnectWallet] =
+    useState<
+      (
+        wallet: SupportedWallet,
+        providerType: SupportedProvider,
+      ) => Promise<void>
+    >();
+  const [connecting, setConnecting] = useState<boolean>();
+  const [selectedProvider, setSelectedProvider] = useState<SupportedProvider>();
+  const [connectedWallet, setConnectedWallet] = useState<SupportedWallet>();
+
+  useEffect(() => {
+    const container = document.createElement("div");
+    document.body.appendChild(container);
+    const authComponent = (
+      <Auth
+        styleConfig={{
+          hidden: true,
+        }}
+        appId={appId}
+        authRef={({
+          connectWallet,
+          connecting,
+          selectedProvider,
+          connectedWallet,
+        }) => {
+          setConnectWallet(connectWallet);
+          setConnecting(connecting);
+          setSelectedProvider(selectedProvider);
+          setConnectedWallet(connectedWallet);
+        }}
+      />
+    );
+    ReactDOM.render(
+      meteorContext ? (
+        <MeteorContext.Provider value={meteorContext}>
+          {authComponent}
+        </MeteorContext.Provider>
+      ) : (
+        authComponent
+      ),
+      container,
+    );
+    return () => {
+      document.body.removeChild(container);
+    };
+  }, []);
+
+  return {
+    connectWallet,
+    connecting,
+    selectedProvider,
+    connectedWallet,
+  };
 };
