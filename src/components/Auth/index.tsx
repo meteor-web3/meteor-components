@@ -240,13 +240,15 @@ export const WalletList = ({
       }
       if (!meteorConnector) {
         meteorConnector = new Connector(provider);
-        if (location.hostname !== "localhost") {
-          const appInfo = await meteorConnector.getDAppInfo({
-            hostname: location.hostname,
-          });
-          appId = appInfo.id;
-        } else {
-          appId = testAppId;
+        if (!appId) {
+          if (location.hostname !== "localhost") {
+            const appInfo = await meteorConnector.getDAppInfo({
+              hostname: location.hostname,
+            });
+            appId = appInfo.id;
+          } else {
+            appId = testAppId;
+          }
         }
       } else {
         meteorConnector.setProvider(provider);
@@ -636,8 +638,8 @@ Auth.Model = function AuthModel({
       <Auth
         {...authProps}
         onConnectSucceed={(meteorConnector, connectRes) => {
-          handleCancel();
           authProps?.onConnectSucceed?.(meteorConnector, connectRes);
+          handleCancel();
         }}
       />
     </FullScreenModal>
@@ -658,7 +660,7 @@ Auth.openModal = (meteorContext?: MeteorContextType, authProps?: AuthProps) => {
               setTimeout(() => {
                 document.body.removeChild(container);
                 resolve(connectRes);
-              }, 500);
+              }, 400);
             },
           }}
           onCancel={async () => {
