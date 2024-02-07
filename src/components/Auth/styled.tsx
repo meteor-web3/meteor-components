@@ -1,7 +1,10 @@
+import { SerializedStyles } from "@emotion/react";
 import styled from "@emotion/styled";
 import { motion } from "framer-motion";
 
-export const EmbedWalletContainer = styled(motion.div)`
+export const EmbedWalletContainer = styled(motion.div)<{
+  customCss?: SerializedStyles;
+}>`
   width: 360px;
   border-radius: 24px;
   background-color: #fff;
@@ -80,6 +83,8 @@ export const EmbedWalletContainer = styled(motion.div)`
       }
     }
   }
+
+  ${({ customCss }) => customCss}
 `;
 
 export const WalletListContainer = styled(motion.div)`
@@ -108,6 +113,13 @@ export const WalletListContainer = styled(motion.div)`
 
     &[data-disabled="true"] {
       display: none;
+    }
+    &[data-unavailable="true"] {
+      cursor: not-allowed;
+      background-color: hsl(0, 0%, 96%);
+      &:hover {
+        background-color: hsl(0, 0%, 96%);
+      }
     }
 
     .wallet-logo {

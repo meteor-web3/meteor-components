@@ -1,8 +1,9 @@
 /* eslint-disable no-case-declarations */
-import React, { useEffect, useState } from "react";
+import React, { useContext, useEffect, useState } from "react";
 
 // import "@meteor-web3/meteor-iframe";
 // import { CoinbaseWalletSDK } from "@coinbase/wallet-sdk";
+import { css, SerializedStyles } from "@emotion/react";
 import {
   Chain,
   Connector,
@@ -13,21 +14,36 @@ import {
   SYSTEM_CALL,
   WALLET,
 } from "@meteor-web3/connector";
+import {
+  MeteorContext,
+  MeteorContextType,
+  useAction,
+} from "@meteor-web3/hooks";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import CancelOutlinedIcon from "@mui/icons-material/CancelOutlined";
 import { Tooltip, CircularProgress } from "@mui/material";
 import {
-  PrivyProvider,
-  usePrivy,
-  useLogin,
-  useLogout,
-  useWallets,
-  useCreateWallet,
-} from "@privy-io/react-auth";
+  AuthType,
+  ParticleNetwork,
+  WalletEntryPosition,
+} from "@particle-network/auth";
+import { ParticleProvider } from "@particle-network/provider";
+// import {
+//   PrivyProvider,
+//   usePrivy,
+//   useLogin,
+//   useLogout,
+//   useWallets,
+//   useCreateWallet,
+// } from "@privy-io/react-auth";
 import { EthereumProvider } from "@walletconnect/ethereum-provider";
+import ReactDOM from "react-dom";
 
 import { EmbedWalletContainer, WalletListContainer } from "./styled";
 import { MessageTypes, message } from "../Message";
+import { FullScreenModal } from "../Modal";
+
+import { uuid } from "@/utils/uuid";
 
 export type WalletConfig = {
   enabled?: {
@@ -35,12 +51,28 @@ export type WalletConfig = {
     meteorWallet?: boolean;
     meteorWeb?: boolean;
   };
+  // privyAppId?: string;
+};
+
+export type StyleConfig = {
+  hidden?: boolean;
+  customStyle?: React.CSSProperties;
+  customCss?: SerializedStyles;
 };
 
 export interface AuthProps {
   appId?: string;
   walletConfig?: WalletConfig;
-  getConnectorInstance?: (meteorConnector: Connector) => void;
+  styleConfig?: StyleConfig;
+  authRef?: (params: {
+    connectWallet: (wallet: SupportedWallet) => Promise<void>;
+    connecting: boolean;
+    connectedWallet?: SupportedWallet;
+  }) => void;
+  onConnectSucceed?: (
+    meteorConnector: Connector,
+    connectRes: ConnectRes,
+  ) => void;
 }
 
 let meteorConnector: Connector;
@@ -54,63 +86,81 @@ export const Auth = ({
   walletConfig = {
     enabled: { dataverseSnap: true, meteorWallet: true, meteorWeb: true },
   },
-  getConnectorInstance,
+  styleConfig = {
+    hidden: false,
+  },
+  authRef,
+  onConnectSucceed,
 }: AuthProps) => {
   const [connectRes, setConnectRes] = useState<ConnectRes>();
 
   return (
-    <PrivyProvider
-      // use your own appId to make sure connect successfully
-      // this test appId is only for localhost:3000
-      appId='clpispdty00ycl80fpueukbhl'
-      config={{
-        loginMethods: ["google", "twitter", "github", "apple", "discord"],
-        embeddedWallets: { createOnLogin: "users-without-wallets" },
+    // <PrivyProvider
+    //   // use your own appId to make sure connect successfully
+    //   // this test appId is only for localhost:3000
+    //   appId={walletConfig?.privyAppId || "clpispdty00ycl80fpueukbhl"}
+    //   config={{
+    //     loginMethods: ["google", "twitter", "github", "apple", "discord"],
+    //     embeddedWallets: { createOnLogin: "users-without-wallets" },
+    //   }}
+    // >
+    <EmbedWalletContainer
+      style={{
+        ...(styleConfig.hidden && { display: "none" }),
+        ...styleConfig.customStyle,
       }}
+      customCss={styleConfig.customCss}
+      layout
+      transition={{ duration: 0.15 }}
     >
-      <EmbedWalletContainer layout transition={{ duration: 0.15 }}>
-        <p className='top-tip'>
-          {connectRes
-            ? "You have already logged in"
-            : "Choose a wallet to log in"}
-        </p>
-        <div className='logo-container' style={{ marginBottom: "16px" }}>
-          <img
-            className='logo'
-            src='https://avatars.githubusercontent.com/u/118692557?s=200&v=4'
-            alt='Meteor'
-          />
-          <span>Meteor</span>
-        </div>
-        {connectRes && (
-          <div className='connected'>
-            <p>{connectRes.address}</p>
-            <p>{connectRes.pkh}</p>
-          </div>
-        )}
-        <WalletList
-          appId={appId}
-          walletConfig={walletConfig}
-          onConnect={setConnectRes}
-          onDisconnect={() => setConnectRes(undefined)}
-          getConnectorInstance={getConnectorInstance}
+      <p className='top-tip'>
+        {connectRes
+          ? "You have already logged in"
+          : "Choose a wallet to log in"}
+      </p>
+      <div className='logo-container' style={{ marginBottom: "16px" }}>
+        <img
+          className='logo'
+          src='https://avatars.githubusercontent.com/u/118692557?s=200&v=4'
+          alt='Meteor'
         />
-        <div className='footer'>
-          <a
-            href='https://github.com/meteor-web3'
-            target='_blank'
-            rel='noreferrer'
-          >
-            Powered by Meteor
-          </a>
+        <span>Meteor</span>
+      </div>
+      {connectRes && (
+        <div className='connected'>
+          <p>{connectRes.address}</p>
+          <p>{connectRes.pkh}</p>
         </div>
-      </EmbedWalletContainer>
-    </PrivyProvider>
+      )}
+      <WalletList
+        appId={appId}
+        walletConfig={walletConfig}
+        authRef={authRef}
+        onConnect={(connector, connectRes) => {
+          setConnectRes(connectRes);
+          onConnectSucceed?.(connector, connectRes);
+        }}
+        onDisconnect={() => setConnectRes(undefined)}
+      />
+      <div className='footer'>
+        <a
+          href='https://github.com/meteor-web3'
+          target='_blank'
+          rel='noreferrer'
+        >
+          Powered by Meteor
+        </a>
+      </div>
+    </EmbedWalletContainer>
+    // </PrivyProvider>
   );
 };
 
 export type ConnectRes = {
   address: string;
+  chain: Chain;
+  wallet: WALLET;
+  userInfo?: any;
   pkh: string;
 };
 
@@ -121,31 +171,38 @@ export type SupportedWallet =
 export interface WalletListProps {
   appId?: string;
   walletConfig?: WalletConfig;
-  onConnect?: (connectRes: ConnectRes) => void;
+  authRef?: (params: {
+    connectWallet: (wallet: SupportedWallet) => Promise<void>;
+    connecting: boolean;
+    connectedWallet?: SupportedWallet;
+  }) => void;
+  onConnect?: (meteorConnector: Connector, connectRes: ConnectRes) => void;
   onDisconnect?: () => void;
-  getConnectorInstance?: (meteorConnector: Connector) => void;
 }
 
 export const WalletList = ({
   appId,
   walletConfig,
+  authRef,
   onConnect,
   onDisconnect,
-  getConnectorInstance,
 }: WalletListProps) => {
   const [connecting, setConnecting] = useState<boolean>(false);
   const [selectedProvider, setSelectedProvider] = useState<
     "meteor-wallet" | "meteor-web"
   >();
   const [connectedWallet, setConnectedWallet] = useState<SupportedWallet>();
-  const [waitForPrivyConnecting, setWaitForPrivyConnecting] =
-    useState<boolean>(false);
+  // const [waitForPrivyConnecting, setWaitForPrivyConnecting] =
+  //   useState<boolean>(false);
+  // meteor-hooks context
+  const meteorContext = useContext(MeteorContext);
+  const { actionConnectWallet, actionCreateCapability } = useAction();
 
-  const { ready: privyReady, authenticated: privyAuthenticated } = usePrivy();
-  const { wallets: privyWallets } = useWallets();
-  const { login: privyLogin } = useLogin();
-  const { logout: privyLogout } = useLogout();
-  const { createWallet: privyCreateWallet } = useCreateWallet();
+  // const { ready: privyReady, authenticated: privyAuthenticated } = usePrivy();
+  // const { wallets: privyWallets } = useWallets();
+  // const { login: privyLogin } = useLogin();
+  // const { logout: privyLogout } = useLogout();
+  // const { createWallet: privyCreateWallet } = useCreateWallet();
 
   const handleConnectWallet = async (wallet: SupportedWallet) => {
     setConnecting(true);
@@ -194,7 +251,6 @@ export const WalletList = ({
       } else {
         meteorConnector.setProvider(provider);
       }
-      getConnectorInstance?.(meteorConnector);
       // connect the real wallet
       let connectRes: {
         address: string;
@@ -221,23 +277,55 @@ export const WalletList = ({
         let ethereumProvider: any;
         // handle external-wallet process
         if (wallet === "google") {
-          if (!privyReady) {
-            throw "Privy is not ready, please waiting...";
-          }
-          const embededWallet = privyWallets.find(
-            wallet => wallet.walletClientType === "privy",
-          );
-          if (!embededWallet) {
-            setWaitForPrivyConnecting(true);
-            if (!privyAuthenticated) {
-              privyLogin();
+          // if (!privyReady) {
+          //   throw "Privy is not ready, please waiting...";
+          // }
+          // const embededWallet = privyWallets.find(
+          //   wallet => wallet.walletClientType === "privy",
+          // );
+          // if (!embededWallet) {
+          //   setWaitForPrivyConnecting(true);
+          //   if (!privyAuthenticated) {
+          //     privyLogin();
+          //   } else {
+          //     privyCreateWallet();
+          //   }
+          //   return;
+          // } else {
+          //   ethereumProvider = await embededWallet.getEthereumProvider();
+          // }
+          const preferredAuthType: AuthType = "google";
+          const chainId = 1;
+          const chainName = "Ethereum";
+          const particle = new ParticleNetwork({
+            projectId: "12a93f47-6f21-4e4e-888b-9a4b57933c86",
+            clientKey: "cMIDP67n1NvlnlOoiG7CLSfvpwRrTaJZQJJKkZJ1",
+            appId: "bc6dab3a-9da1-4324-9e71-8f879de9d7b4",
+            chainName, //optional: current chain name, default Ethereum.
+            chainId, //optional: current chain id, default 1.
+            wallet: {
+              //optional: by default, the wallet entry is displayed in the bottom right corner of the webpage.
+              displayWalletEntry: false, //show wallet entry when connect particle.
+              // defaultWalletEntryPosition: WalletEntryPosition.BR, //wallet entry position
+              uiMode: "light", //optional: light or dark, if not set, the default is the same as web auth.
+              supportChains: [
+                { id: 137, name: "polygon" },
+                { id: 80001, name: "polygon" },
+              ], // optional: web wallet support chains.
+              customStyle: {}, //optional: custom wallet style
+            },
+          });
+          const particleProvider = new ParticleProvider(particle.auth);
+          if (!particle.auth.isLogin()) {
+            if (preferredAuthType) {
+              await particle.auth.login({
+                preferredAuthType, //support facebook,google,twitter,apple,discord,github,twitch,microsoft,linkedin etc.
+              });
             } else {
-              privyCreateWallet();
+              await particleProvider.enable();
             }
-            return;
-          } else {
-            ethereumProvider = await embededWallet.getEthereumProvider();
           }
+          ethereumProvider = particleProvider;
         } else {
           switch (wallet) {
             case WALLET.METAMASK:
@@ -296,7 +384,13 @@ export const WalletList = ({
         },
       });
       // setConnected(true);
-      onConnect?.({ address: connectRes.address, pkh });
+      if (meteorContext) {
+        const { dispatch, setConnector } = meteorContext;
+        dispatch(actionConnectWallet(connectRes));
+        dispatch(actionCreateCapability({ pkh, appId: appId! }));
+        setConnector(meteorConnector);
+      }
+      onConnect?.(meteorConnector, { ...connectRes, pkh });
       setConnectedWallet(wallet);
       message.success("Wallet connected successfully.");
     } catch (e: any) {
@@ -313,15 +407,23 @@ export const WalletList = ({
     }
   };
 
+  // useEffect(() => {
+  //   const embededWallet = privyWallets.find(
+  //     wallet => wallet.walletClientType === "privy",
+  //   );
+  //   if (embededWallet && waitForPrivyConnecting) {
+  //     setWaitForPrivyConnecting(false);
+  //     handleConnectWallet("google");
+  //   }
+  // }, [privyWallets, handleConnectWallet]);
+
   useEffect(() => {
-    const embededWallet = privyWallets.find(
-      wallet => wallet.walletClientType === "privy",
-    );
-    if (embededWallet && waitForPrivyConnecting) {
-      setWaitForPrivyConnecting(false);
-      handleConnectWallet("google");
-    }
-  }, [privyWallets, handleConnectWallet]);
+    authRef?.({
+      connectWallet: handleConnectWallet,
+      connecting,
+      connectedWallet,
+    });
+  }, [authRef, handleConnectWallet, connecting, connectedWallet]);
 
   const walletProviders = (
     <>
@@ -333,7 +435,11 @@ export const WalletList = ({
         <div
           className='wallet-item'
           data-disabled={walletConfig?.enabled?.dataverseSnap === false}
-          onClick={() => handleConnectWallet(WALLET.METAMASK)}
+          data-unavailable={true}
+          onClick={() => {
+            // handleConnectWallet(WALLET.METAMASK)
+            message.info("Coming soon...");
+          }}
         >
           <img
             className='wallet-logo'
@@ -387,10 +493,10 @@ export const WalletList = ({
           className='wallet-logo'
           src='https://avatars.githubusercontent.com/u/1342004?s=200&v=4'
         />
-        Web2 Social
-        {selectedProvider === "meteor-wallet"
+        Google (Particle)
+        {/* {selectedProvider === "meteor-wallet"
           ? "(via Particle)"
-          : "(via Privy)"}
+          : "(via Privy)"} */}
       </div>
       <div
         className='wallet-item'
@@ -470,9 +576,9 @@ export const WalletList = ({
           <div
             className='wallet-item'
             onClick={async () => {
-              if (privyAuthenticated) {
-                await privyLogout();
-              }
+              // if (privyAuthenticated) {
+              //   await privyLogout();
+              // }
               setConnectedWallet(undefined);
               onDisconnect?.();
             }}
@@ -487,4 +593,87 @@ export const WalletList = ({
         ))}
     </WalletListContainer>
   );
+};
+
+export interface AuthModalProps {
+  authProps?: AuthProps;
+  onCancel?: () => void;
+  defaultVisible?: boolean;
+  controlVisible?: boolean;
+}
+
+Auth.Model = function AuthModel({
+  authProps,
+  onCancel,
+  defaultVisible = true,
+  controlVisible,
+}: AuthModalProps) {
+  const [visible, setVisible] = useState<boolean>(defaultVisible);
+
+  useEffect(() => {
+    if (controlVisible !== undefined) {
+      setVisible(controlVisible);
+    }
+  }, [controlVisible]);
+
+  const handleCancel = async () => {
+    onCancel?.();
+    if (controlVisible === undefined) {
+      setVisible(false);
+    }
+  };
+
+  return (
+    <FullScreenModal
+      controlVisible={visible}
+      id={`auth-modal-${uuid()}`}
+      clickOutsideToClose
+      onCancel={handleCancel}
+      rootStyle={css`
+        z-index: 1000;
+      `}
+    >
+      <Auth
+        {...authProps}
+        onConnectSucceed={(meteorConnector, connectRes) => {
+          handleCancel();
+          authProps?.onConnectSucceed?.(meteorConnector, connectRes);
+        }}
+      />
+    </FullScreenModal>
+  );
+};
+
+Auth.openModal = (meteorContext: MeteorContextType, authProps?: AuthProps) => {
+  return new Promise<ConnectRes | void>((resolve, reject) => {
+    try {
+      const container = document.createElement("div");
+      document.body.appendChild(container);
+      ReactDOM.render(
+        <MeteorContext.Provider value={meteorContext}>
+          <Auth.Model
+            authProps={{
+              ...authProps,
+              onConnectSucceed(meteorConnector, connectRes) {
+                authProps?.onConnectSucceed?.(meteorConnector, connectRes);
+                setTimeout(() => {
+                  document.body.removeChild(container);
+                  resolve(connectRes);
+                }, 500);
+              },
+            }}
+            onCancel={async () => {
+              setTimeout(() => {
+                document.body.removeChild(container);
+                resolve();
+              }, 500);
+            }}
+          />
+        </MeteorContext.Provider>,
+        container,
+      );
+    } catch (e) {
+      reject(e);
+    }
+  });
 };
