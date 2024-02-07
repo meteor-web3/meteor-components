@@ -1,8 +1,8 @@
 /* eslint-disable no-case-declarations */
-import React, { useContext, useEffect, useState } from "react";
+import React, { createContext, useContext, useEffect, useState } from "react";
 
 // import "@meteor-web3/meteor-iframe";
-// import { CoinbaseWalletSDK } from "@coinbase/wallet-sdk";
+import { CoinbaseWalletSDK } from "@coinbase/wallet-sdk";
 import { css, SerializedStyles } from "@emotion/react";
 import {
   Chain,
@@ -19,6 +19,7 @@ import {
   MeteorContextType,
   useAction,
 } from "@meteor-web3/hooks";
+import { detectMeteorExtension } from "@meteor-web3/utils";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import CancelOutlinedIcon from "@mui/icons-material/CancelOutlined";
 import { Tooltip, CircularProgress } from "@mui/material";
@@ -39,10 +40,27 @@ import { ParticleProvider } from "@particle-network/provider";
 import { EthereumProvider } from "@walletconnect/ethereum-provider";
 import ReactDOM from "react-dom";
 
-import { EmbedWalletContainer, WalletListContainer } from "./styled";
+import {
+  EmbedWalletContainer,
+  WalletListContainer,
+  DetailContainer,
+  MeteorWalletDetailContainer,
+  MeteorWebDetailContainer,
+  MeteorSnapDetailContainer,
+} from "./styled";
 import { MessageTypes, message } from "../Message";
 import { FullScreenModal } from "../Modal";
 
+import aggregatorSVG from "@/assets/icon/aggregator.svg";
+import authenticatorSVG from "@/assets/icon/authenticator.svg";
+import closeSVG from "@/assets/icon/close2.svg";
+import coinbaseSVG from "@/assets/icon/coinbase.svg";
+import downloadSVG from "@/assets/icon/download.svg";
+import googleSVG from "@/assets/icon/google.svg";
+import metamaskSVG from "@/assets/icon/metamask.svg";
+import metamaskSnapSVG from "@/assets/icon/metamaskSnap.svg";
+import meteorWalletScreenshotPNG from "@/assets/icon/meteorWalletScreenshot.png";
+import walletConnectSVG from "@/assets/icon/walletConnect.svg";
 import { uuid } from "@/utils/uuid";
 
 export type WalletConfig = {
@@ -60,6 +78,45 @@ export type StyleConfig = {
   customCss?: SerializedStyles;
 };
 
+export type ConnectRes = {
+  address: string;
+  chain: Chain;
+  wallet: WALLET;
+  userInfo?: any;
+  pkh: string;
+};
+
+export type SupportedWallet =
+  | "Google"
+  | (typeof WALLET)["METAMASK" | "WALLETCONNECT" | "COINBASE"];
+
+export type SupportedProvider = "meteor-wallet" | "meteor-web" | "meteor-snap";
+
+/**
+ * Provides a core method and state call without UI component control.
+ * When any item in params is updated, this function will be called.
+ * `null` means this value didn't update this time.
+ */
+export type AuthRef = (params: {
+  connectWallet: ConnectWallet | null;
+  connecting: boolean | null;
+  selectedProvider?: SupportedProvider | null;
+  connectedWallet?: SupportedWallet | null;
+}) => void;
+
+export type ConnectWallet = (
+  wallet: SupportedWallet,
+  /**
+   * if it is no set, default will be `selectedProvider`
+   */
+  providerType?: SupportedProvider,
+  /**
+   * if it is set true, no message ui will be shown, and possible error will be throw
+   * @default false
+   */
+  noMessage?: boolean,
+) => Promise<ConnectRes | undefined>;
+
 export interface AuthProps {
   /**
    * If the appId is not set, it will be inferred based on the website domain.
@@ -69,16 +126,7 @@ export interface AuthProps {
   appId?: string;
   walletConfig?: WalletConfig;
   styleConfig?: StyleConfig;
-  /**
-   * Provides a core method and state call without UI component control.
-   * When any item in params is updated, this function will be called.
-   */
-  authRef?: (params: {
-    connectWallet: ConnectWallet;
-    connecting: boolean;
-    selectedProvider?: SupportedProvider;
-    connectedWallet?: SupportedWallet;
-  }) => void;
+  authRef?: AuthRef;
   /**
    * Called when the connection is successful
    * @returns meteorConnector(generated inside the component) and ConnectRes
@@ -107,6 +155,7 @@ export const Auth = ({
   onConnectSucceed,
 }: AuthProps) => {
   const [connectRes, setConnectRes] = useState<ConnectRes>();
+  const [selectedProvider, setSelectedProvider] = useState<SupportedProvider>();
 
   return (
     // <PrivyProvider
@@ -127,124 +176,186 @@ export const Auth = ({
       layout
       transition={{ duration: 0.15 }}
     >
-      <p className='top-tip'>
-        {connectRes
-          ? "You have already logged in"
-          : "Choose a wallet to log in"}
-      </p>
-      <div className='logo-container' style={{ marginBottom: "16px" }}>
-        <img
-          className='logo'
-          src='https://avatars.githubusercontent.com/u/118692557?s=200&v=4'
-          alt='Meteor'
+      <div className='wallet-list'>
+        <div className='top-tip'>Connect data wallet</div>
+        <div className='tip'>Prevalent</div>
+        {/* {connectRes && (
+          <div className='connected'>
+            <p>{connectRes.address}</p>
+            <p>{connectRes.pkh}</p>
+          </div>
+        )} */}
+        <WalletList
+          walletConfig={walletConfig}
+          onChange={setSelectedProvider}
         />
-        <span>Meteor</span>
       </div>
-      {connectRes && (
-        <div className='connected'>
-          <p>{connectRes.address}</p>
-          <p>{connectRes.pkh}</p>
-        </div>
-      )}
-      <WalletList
-        appId={appId}
-        walletConfig={walletConfig}
-        authRef={authRef}
-        onConnect={(connector, connectRes) => {
-          setConnectRes(connectRes);
-          onConnectSucceed?.(connector, connectRes);
-        }}
-        onDisconnect={() => setConnectRes(undefined)}
-      />
-      <div className='footer'>
-        <a
-          href='https://github.com/meteor-web3'
-          target='_blank'
-          rel='noreferrer'
-        >
-          Powered by Meteor
-        </a>
+      <div className='detail'>
+        <Detail
+          appId={appId}
+          selectedProvider={selectedProvider}
+          setSelectedProvider={setSelectedProvider}
+          authRef={authRef}
+          onConnect={(connector, connectRes) => {
+            setConnectRes(connectRes);
+            onConnectSucceed?.(connector, connectRes);
+          }}
+          onDisconnect={() => setConnectRes(undefined)}
+        />
       </div>
     </EmbedWalletContainer>
     // </PrivyProvider>
   );
 };
 
-export type ConnectRes = {
-  address: string;
-  chain: Chain;
-  wallet: WALLET;
-  userInfo?: any;
-  pkh: string;
+export interface WalletListProps {
+  walletConfig?: WalletConfig;
+  onChange?: (provider?: SupportedProvider) => void;
+}
+
+// pure-ui
+export const WalletList = ({ walletConfig, onChange }: WalletListProps) => {
+  const [selectedProvider, setSelectedProvider] = useState<SupportedProvider>();
+
+  useEffect(() => {
+    onChange?.(selectedProvider);
+  }, [selectedProvider]);
+
+  const walletProviders = (
+    <>
+      <Tooltip
+        arrow
+        placement='right'
+        title='Meteor Snap is still in the testing phase, you need to use Metamask flask and run the snap server locally before using it.'
+      >
+        <div
+          className='wallet-item'
+          css={css`
+            color: grey;
+          `}
+          data-disabled={walletConfig?.enabled?.dataverseSnap === false}
+          data-unavailable={true}
+          onClick={() => {
+            // handleConnectWallet(WALLET.METAMASK)
+            message.info("Coming soon...");
+          }}
+        >
+          <img
+            className='wallet-logo'
+            src='https://avatars.githubusercontent.com/u/11744586?s=200&v=4'
+          />
+          Meteor Snap
+        </div>
+      </Tooltip>
+      <Tooltip
+        arrow
+        placement='right'
+        title='You may need to pre-install the Meteor-Wallet browser extension before using it. Only MetaMask stable is available, you need to disable MetaMask flask.'
+      >
+        <div
+          className='wallet-item'
+          data-disabled={walletConfig?.enabled?.meteorWallet === false}
+          onClick={() => setSelectedProvider("meteor-wallet")}
+        >
+          <img
+            className='wallet-logo'
+            src='https://avatars.githubusercontent.com/u/118692557?s=200&v=4'
+          />
+          Meteor Wallet
+        </div>
+      </Tooltip>
+      <Tooltip
+        arrow
+        placement='right'
+        title='This wallet will be embedded in an iframe and only support External-Wallet for now.'
+      >
+        <div
+          className='wallet-item'
+          data-disabled={walletConfig?.enabled?.meteorWeb === false}
+          onClick={() => setSelectedProvider("meteor-web")}
+        >
+          <span className='wallet-logo'>🌈</span>
+          Meteor Web
+        </div>
+      </Tooltip>
+    </>
+  );
+
+  return (
+    <WalletListContainer layout transition={{ duration: 0.15 }}>
+      {/* {connecting && (
+        <>
+          <div className='wallet-item'>
+            <CircularProgress className='wallet-logo' />
+            Connecting...
+          </div>
+          <div
+            className='wallet-item'
+            onClick={() => {
+              setConnecting(false);
+            }}
+          >
+            <CancelOutlinedIcon className='wallet-logo' />
+            Force cancel
+          </div>
+        </>
+      )}
+      {!connecting &&
+        (connectedWallet ? (
+          <div
+            className='wallet-item'
+            onClick={async () => {
+              // if (privyAuthenticated) {
+              //   await privyLogout();
+              // }
+              setConnectedWallet(undefined);
+              onDisconnect?.();
+            }}
+          >
+            <ArrowBackIcon className='wallet-logo' />
+            Reconnect another wallet
+          </div>
+        ) : (
+          walletProviders
+        ))} */}
+      {walletProviders}
+    </WalletListContainer>
+  );
 };
 
-export type SupportedWallet =
-  | "google"
-  | (typeof WALLET)["METAMASK" | "WALLETCONNECT"];
-
-export type SupportedProvider = "meteor-wallet" | "meteor-web" | "meteor-snap";
-
-export type ConnectWallet = (
-  wallet: SupportedWallet,
-  /**
-   * if it is no set, default will be `selectedProvider`
-   */
-  providerType?: SupportedProvider,
-  /**
-   * if it is set true, no message ui will be shown, and possible error will be throw
-   * @default false
-   */
-  noMessage?: boolean,
-) => Promise<ConnectRes | undefined>;
-
-export interface WalletListProps {
+export interface DetailProps {
   appId?: string;
-  walletConfig?: WalletConfig;
-  /**
-   * Provides a core method and state call without UI component control.
-   * When any item in params is updated, this function will be called.
-   */
-  authRef?: (params: {
-    connectWallet: ConnectWallet;
-    connecting: boolean;
-    selectedProvider?: SupportedProvider;
-    connectedWallet?: SupportedWallet;
-  }) => void;
+  selectedProvider?: SupportedProvider;
+  setSelectedProvider: (selectedProvider?: SupportedProvider) => void;
+  authRef?: AuthRef;
   onConnect?: (meteorConnector: Connector, connectRes: ConnectRes) => void;
   onDisconnect?: () => void;
 }
 
-export const WalletList = ({
+export const Detail = ({
   appId,
-  walletConfig,
+  selectedProvider,
   authRef,
+  setSelectedProvider,
   onConnect,
   onDisconnect,
-}: WalletListProps) => {
+}: DetailProps) => {
   const [connecting, setConnecting] = useState<boolean>(false);
-  const [selectedProvider, setSelectedProvider] = useState<SupportedProvider>();
   const [connectedWallet, setConnectedWallet] = useState<SupportedWallet>();
-  // const [waitForPrivyConnecting, setWaitForPrivyConnecting] =
-  //   useState<boolean>(false);
-  // meteor-hooks context
   const meteorContext = useContext(MeteorContext) as
     | MeteorContextType
     | undefined;
   const { actionConnectWallet, actionCreateCapability } = useAction();
 
-  // const { ready: privyReady, authenticated: privyAuthenticated } = usePrivy();
-  // const { wallets: privyWallets } = useWallets();
-  // const { login: privyLogin } = useLogin();
-  // const { logout: privyLogout } = useLogout();
-  // const { createWallet: privyCreateWallet } = useCreateWallet();
-
   const handleConnectWallet: ConnectWallet = async (
-    wallet: SupportedWallet,
-    providerType: SupportedProvider | undefined = selectedProvider,
-    noMessage: boolean = false,
+    wallet,
+    providerType = selectedProvider,
+    noMessage = false,
   ) => {
-    setSelectedProvider(providerType);
     setConnecting(true);
+    if (providerType !== selectedProvider) {
+      setSelectedProvider(providerType);
+    }
     try {
       // init provider and connector
       let baseProvider: BaseProvider;
@@ -283,17 +394,18 @@ export const WalletList = ({
       } else {
         meteorConnector.setProvider(baseProvider);
       }
-      if (!appId) {
+      let connectAppId = appId;
+      if (!connectAppId) {
         if (location.hostname !== "localhost") {
           const appInfo = await meteorConnector.getDAppInfo({
             hostname: location.hostname,
           });
-          appId = appInfo.id;
+          connectAppId = appInfo.id;
         } else {
-          appId = testAppId;
+          connectAppId = testAppId;
         }
       }
-      // connect the real wallet
+      // connect real wallet
       let connectRes: {
         address: string;
         chain: Chain;
@@ -305,8 +417,8 @@ export const WalletList = ({
           throw "MetaMask is not installed or not enabled.";
         }
         connectRes = await meteorConnector.connectWallet({
-          wallet: wallet === "google" ? WALLET.PARTICLE : wallet,
-          preferredAuthType: wallet === "google" ? "google" : undefined,
+          wallet: wallet === "Google" ? WALLET.PARTICLE : wallet,
+          preferredAuthType: wallet === "Google" ? "google" : undefined,
         });
         if (!connectRes) {
           // if (providerType === "meteor-snap") {
@@ -318,8 +430,7 @@ export const WalletList = ({
         }
       } else {
         let ethereumProvider: any;
-        // handle external-wallet process
-        if (wallet === "google") {
+        if (wallet === "Google") {
           // if (!privyReady) {
           //   throw "Privy is not ready, please waiting...";
           // }
@@ -377,19 +488,19 @@ export const WalletList = ({
               }
               ethereumProvider = window.ethereum;
               break;
-            // case WALLET.COINBASE:
-            //   const chainId = 1;
-            //   const jsonRpcUrl = "https://mainnet.infura.io/v3";
-            //   const coinbaseWallet = new CoinbaseWalletSDK({
-            //     appName: "Meteor",
-            //     darkMode: false,
-            //   });
-            //   const coinbaseProvider = coinbaseWallet.makeWeb3Provider(
-            //     jsonRpcUrl,
-            //     chainId,
-            //   );
-            //   ethereumProvider = coinbaseProvider;
-            //   break;
+            case WALLET.COINBASE:
+              const chainId = 1;
+              const jsonRpcUrl = "https://mainnet.infura.io/v3";
+              const coinbaseWallet = new CoinbaseWalletSDK({
+                appName: "Meteor",
+                darkMode: false,
+              });
+              const coinbaseProvider = coinbaseWallet.makeWeb3Provider(
+                jsonRpcUrl,
+                chainId,
+              );
+              ethereumProvider = coinbaseProvider;
+              break;
             case WALLET.WALLETCONNECT:
               const client = await EthereumProvider.init({
                 // use your own projectId to make sure connect successfully
@@ -420,10 +531,11 @@ export const WalletList = ({
           throw "Connect Wallet Failed! Please Check if not install Dataverse Snap or not enabled MetaMask flask.";
         }
       }
+
       const { pkh } = await meteorConnector.runOS({
         method: SYSTEM_CALL.createCapability,
         params: {
-          appId: appId!,
+          appId: connectAppId!,
         },
       });
       // setConnected(true);
@@ -457,16 +569,6 @@ export const WalletList = ({
     }
   };
 
-  // useEffect(() => {
-  //   const embededWallet = privyWallets.find(
-  //     wallet => wallet.walletClientType === "privy",
-  //   );
-  //   if (embededWallet && waitForPrivyConnecting) {
-  //     setWaitForPrivyConnecting(false);
-  //     handleConnectWallet("google");
-  //   }
-  // }, [privyWallets, handleConnectWallet]);
-
   useEffect(() => {
     authRef?.({
       connectWallet: handleConnectWallet,
@@ -482,173 +584,167 @@ export const WalletList = ({
     connectedWallet,
   ]);
 
-  const walletProviders = (
-    <>
-      <Tooltip
-        arrow
-        placement='right'
-        title='Dataverse Snap is still in the testing phase, you need to use Metamask flask and run the snap server locally before using it.'
-      >
-        <div
-          className='wallet-item'
-          data-disabled={walletConfig?.enabled?.dataverseSnap === false}
-          data-unavailable={true}
-          onClick={() => {
-            // handleConnectWallet(WALLET.METAMASK, "meteor-snap");
-            message.info("Coming soon...");
-          }}
-        >
-          <img
-            className='wallet-logo'
-            src='https://avatars.githubusercontent.com/u/11744586?s=200&v=4'
-          />
-          Dataverse Snap
-        </div>
-      </Tooltip>
-      <Tooltip
-        arrow
-        placement='right'
-        title='You may need to pre-install the Meteor-Wallet browser extension before using it. Only MetaMask stable is available, you need to disable MetaMask flask.'
-      >
-        <div
-          className='wallet-item'
-          data-disabled={walletConfig?.enabled?.meteorWallet === false}
-          onClick={() => setSelectedProvider("meteor-wallet")}
-        >
-          <img
-            className='wallet-logo'
-            src='https://avatars.githubusercontent.com/u/118692557?s=200&v=4'
-          />
-          Meteor Wallet
-        </div>
-      </Tooltip>
-      <Tooltip
-        arrow
-        placement='right'
-        title='This wallet will be embedded in an iframe and only support External-Wallet for now.'
-      >
-        <div
-          className='wallet-item'
-          data-disabled={walletConfig?.enabled?.meteorWeb === false}
-          onClick={() => setSelectedProvider("meteor-web")}
-        >
-          <span className='wallet-logo'>🌈</span>
-          Meteor Web
-        </div>
-      </Tooltip>
-    </>
+  return (
+    <DetailContainer>
+      <img src={closeSVG} className='close' />
+      {selectedProvider === "meteor-wallet" ? (
+        <MeteorWalletDetail handleConnectWallet={handleConnectWallet} />
+      ) : selectedProvider === "meteor-web" ? (
+        <MeteorWebDetail handleConnectWallet={handleConnectWallet} />
+      ) : selectedProvider === "meteor-snap" ? (
+        <MeteorSnapDetail handleConnectWallet={handleConnectWallet} />
+      ) : (
+        <DefaultDetail />
+      )}
+    </DetailContainer>
   );
+};
 
-  const walletList = (
-    <>
-      <div
-        className='wallet-item'
-        data-disabled={walletConfig?.enabled?.dataverseSnap === false}
-        onClick={() => handleConnectWallet("google")}
-      >
-        <img
-          className='wallet-logo'
-          src='https://avatars.githubusercontent.com/u/1342004?s=200&v=4'
-        />
-        Google (Particle)
-        {/* {selectedProvider === "meteor-wallet"
-          ? "(via Particle)"
-          : "(via Privy)"} */}
-      </div>
-      <div
-        className='wallet-item'
-        data-disabled={walletConfig?.enabled?.dataverseSnap === false}
-        onClick={() => handleConnectWallet(WALLET.METAMASK)}
-      >
-        <img
-          className='wallet-logo'
-          src='https://avatars.githubusercontent.com/u/11744586?s=200&v=4'
-        />
-        Metamask
-      </div>
-      {/* <div
-        className='wallet-item'
-        data-disabled={walletConfig?.enabled?.dataverseSnap === false}
-        onClick={handleConnectWallet.bind(null, WALLET.COINBASE)}
-      >
-        <img
-          className='wallet-logo'
-          src='https://avatars.githubusercontent.com/u/1885080?s=200&v=4'
-        />
-        Coinbase Wallet
-      </div> */}
-      {/* <div
-        className='wallet-item'
-        data-disabled={walletConfig?.enabled?.dataverseSnap === false}
-        onClick={handleConnectWallet.bind(null, "rainbow")}
-      >
-        <img
-          className='wallet-logo'
-          src='https://avatars.githubusercontent.com/u/48327834?s=200&v=4'
-        />
-        Rainbow
-      </div> */}
-      <div
-        className='wallet-item'
-        data-disabled={walletConfig?.enabled?.dataverseSnap === false}
-        onClick={() => handleConnectWallet(WALLET.WALLETCONNECT)}
-      >
-        <img
-          className='wallet-logo'
-          src='https://avatars.githubusercontent.com/u/37784886?s=200&v=4'
-        />
-        WalletConnect
-      </div>
-      <div
-        className='wallet-item'
-        onClick={() => setSelectedProvider(undefined)}
-      >
-        <ArrowBackIcon className='wallet-logo' />
-        Go back
-      </div>
-    </>
-  );
+const innerWalletList = [
+  { wallet: "Google", name: "Google (Particle)", logo: googleSVG },
+  { wallet: WALLET.METAMASK, name: WALLET.METAMASK, logo: metamaskSVG },
+  {
+    wallet: WALLET.WALLETCONNECT,
+    name: WALLET.WALLETCONNECT,
+    logo: walletConnectSVG,
+  },
+  { wallet: WALLET.COINBASE, name: WALLET.COINBASE, logo: coinbaseSVG },
+];
+
+export const MeteorWalletDetail = ({
+  handleConnectWallet,
+}: {
+  handleConnectWallet: (wallet: SupportedWallet) => void;
+}) => {
+  const [isMeteorInstalled, setIsMeteorInstalled] = useState(false);
+
+  useEffect(() => {
+    detectMeteorExtension().then(res => setIsMeteorInstalled(res));
+  });
 
   return (
-    <WalletListContainer layout transition={{ duration: 0.15 }}>
-      {connecting && (
-        <>
-          <div className='wallet-item'>
-            <CircularProgress className='wallet-logo' />
-            Connecting...
+    <MeteorWalletDetailContainer>
+      {isMeteorInstalled ? (
+        <div>
+          {innerWalletList.map(item => (
+            <div
+              key={item.wallet}
+              onClick={() =>
+                handleConnectWallet(item.wallet as SupportedWallet)
+              }
+              className='innerWalletItem'
+            >
+              <img src={item.logo} />
+              <div className='name'>{item.name}</div>
+            </div>
+          ))}
+        </div>
+      ) : (
+        <div>
+          <div className='description'>
+            Meteor Wallet is a browser extension to securely store and manage
+            your credentials, attestations, licenses, event tickets, and more —
+            all in one place
           </div>
+          <img src={meteorWalletScreenshotPNG} className='screenshot' />
+          <div className='tip'>Don&#39;t have Meteor wallet?</div>
           <div
-            className='wallet-item'
-            onClick={() => {
-              setConnecting(false);
-            }}
+            className='install'
+            onClick={() => window.open(process.env.METEOR_GOOGLE_STORE)}
           >
-            <CancelOutlinedIcon className='wallet-logo' />
-            Force cancel
+            <img src={downloadSVG} className='download' />
+            Install for Chrome
           </div>
-        </>
+        </div>
       )}
-      {!connecting &&
-        (connectedWallet ? (
+    </MeteorWalletDetailContainer>
+  );
+};
+
+export const MeteorWebDetail = ({
+  handleConnectWallet,
+}: {
+  handleConnectWallet: (wallet: SupportedWallet) => void;
+}) => {
+  return (
+    <MeteorWebDetailContainer>
+      <div className='description'>
+        Meteor Web allows you to sign once and keep connected after. It is the
+        most seemless way to
+        <br /> login.
+      </div>
+      <div>
+        {innerWalletList.map(item => (
           <div
-            className='wallet-item'
-            onClick={async () => {
-              // if (privyAuthenticated) {
-              //   await privyLogout();
-              // }
-              setConnectedWallet(undefined);
-              onDisconnect?.();
-            }}
+            key={item.wallet}
+            onClick={() => handleConnectWallet(item.wallet as SupportedWallet)}
+            className='innerWalletItem'
           >
-            <ArrowBackIcon className='wallet-logo' />
-            Reconnect another wallet
+            <img src={item.logo} />
+            <div className='name'>{item.name}</div>
           </div>
-        ) : selectedProvider && selectedProvider !== "meteor-snap" ? (
-          walletList
-        ) : (
-          walletProviders
         ))}
-    </WalletListContainer>
+      </div>
+    </MeteorWebDetailContainer>
+  );
+};
+
+export const MeteorSnapDetail = ({
+  handleConnectWallet,
+}: {
+  handleConnectWallet: (wallet: SupportedWallet) => void;
+}) => {
+  return (
+    <MeteorSnapDetailContainer>
+      <div className='description'>
+        Meteor Web allows you to sign once and keep connected after. It is the
+        most seemless way to
+        <br /> login.
+      </div>
+
+      <img src={metamaskSnapSVG} />
+      {/* <div className='name'>{item.name}</div> */}
+
+      <img src={metamaskSnapSVG} className='screenshot' />
+      <div className='tip'>Don&#39;t have Meteor wallet?</div>
+      <div
+        className='install'
+        onClick={() => window.open(process.env.METEOR_GOOGLE_STORE)}
+      >
+        <img src={downloadSVG} className='download' />
+        Add to MetaMask
+      </div>
+    </MeteorSnapDetailContainer>
+  );
+};
+
+export const DefaultDetail = () => {
+  return (
+    <div>
+      <div className='title'>What is Dataverse Wallet?</div>
+      <div className='aggregator-box'>
+        <img src={aggregatorSVG} />
+        <div>
+          <div className='sub-title'>A Home for your Data Assets</div>
+          <div className='sub-description'>
+            Wallet is used to securely store your identity, attestations and
+            credentials for your personal data.
+          </div>
+        </div>
+      </div>
+      <div className='authenticator-box'>
+        <img src={authenticatorSVG} />
+        <div>
+          <div className='sub-title'>A New Way to Sign In</div>
+          <div className='sub-description'>
+            Wallet works as a dApp <br /> authenticator.
+          </div>
+        </div>
+      </div>
+      <div className='learn-more' onClick={() => window.open("")}>
+        learn more
+      </div>
+    </div>
   );
 };
 
@@ -793,10 +889,10 @@ export const useAuth = (
           selectedProvider,
           connectedWallet,
         }) => {
-          setConnectWallet(() => connectWallet);
-          setConnecting(connecting);
-          setSelectedProvider(selectedProvider);
-          setConnectedWallet(connectedWallet);
+          connectWallet !== null && setConnectWallet(() => connectWallet);
+          connecting !== null && setConnecting(connecting);
+          selectedProvider !== null && setSelectedProvider(selectedProvider);
+          connectedWallet !== null && setConnectedWallet(connectedWallet);
         }}
         onConnectSucceed={(connector, connectRes) => {
           setConnector(connector);

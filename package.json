@@ -28,8 +28,9 @@
   },
   "dependencies": {
     "@arcstone/arcstone-sdk": "^1.0.3",
+    "@coinbase/wallet-sdk": "^3.7.2",
     "@emotion/is-prop-valid": "^1.2.1",
-    "@meteor-web3/connector": "^1.0.18",
+    "@meteor-web3/connector": "^1.0.19",
     "@meteor-web3/hooks": "^1.0.11",
     "@meteor-web3/meteor-iframe": "^0.0.11",
     "@meteor-web3/utils": "^1.0.0",
