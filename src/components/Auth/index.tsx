@@ -644,32 +644,39 @@ Auth.Model = function AuthModel({
   );
 };
 
-Auth.openModal = (meteorContext: MeteorContextType, authProps?: AuthProps) => {
+Auth.openModal = (meteorContext?: MeteorContextType, authProps?: AuthProps) => {
   return new Promise<ConnectRes | void>((resolve, reject) => {
     try {
       const container = document.createElement("div");
       document.body.appendChild(container);
-      ReactDOM.render(
-        <MeteorContext.Provider value={meteorContext}>
-          <Auth.Model
-            authProps={{
-              ...authProps,
-              onConnectSucceed(meteorConnector, connectRes) {
-                authProps?.onConnectSucceed?.(meteorConnector, connectRes);
-                setTimeout(() => {
-                  document.body.removeChild(container);
-                  resolve(connectRes);
-                }, 500);
-              },
-            }}
-            onCancel={async () => {
+      const authComponent = (
+        <Auth.Model
+          authProps={{
+            ...authProps,
+            onConnectSucceed(meteorConnector, connectRes) {
+              authProps?.onConnectSucceed?.(meteorConnector, connectRes);
               setTimeout(() => {
                 document.body.removeChild(container);
-                resolve();
+                resolve(connectRes);
               }, 500);
-            }}
-          />
-        </MeteorContext.Provider>,
+            },
+          }}
+          onCancel={async () => {
+            setTimeout(() => {
+              document.body.removeChild(container);
+              resolve();
+            }, 500);
+          }}
+        />
+      );
+      ReactDOM.render(
+        meteorContext ? (
+          <MeteorContext.Provider value={meteorContext}>
+            {authComponent}
+          </MeteorContext.Provider>
+        ) : (
+          authComponent
+        ),
         container,
       );
     } catch (e) {
