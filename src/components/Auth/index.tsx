@@ -74,10 +74,7 @@ export interface AuthProps {
    * When any item in params is updated, this function will be called.
    */
   authRef?: (params: {
-    connectWallet: (
-      wallet: SupportedWallet,
-      providerType: SupportedProvider,
-    ) => Promise<void>;
+    connectWallet: ConnectWallet;
     connecting: boolean;
     selectedProvider?: SupportedProvider;
     connectedWallet?: SupportedWallet;
@@ -187,6 +184,19 @@ export type SupportedWallet =
 
 export type SupportedProvider = "meteor-wallet" | "meteor-web" | "meteor-snap";
 
+export type ConnectWallet = (
+  wallet: SupportedWallet,
+  /**
+   * if it is no set, default will be `selectedProvider`
+   */
+  providerType?: SupportedProvider,
+  /**
+   * if it is set true, no message ui will be shown, and possible error will be throw
+   * @default false
+   */
+  noMessage?: boolean,
+) => Promise<ConnectRes | undefined>;
+
 export interface WalletListProps {
   appId?: string;
   walletConfig?: WalletConfig;
@@ -195,10 +205,7 @@ export interface WalletListProps {
    * When any item in params is updated, this function will be called.
    */
   authRef?: (params: {
-    connectWallet: (
-      wallet: SupportedWallet,
-      providerType: SupportedProvider,
-    ) => Promise<void>;
+    connectWallet: ConnectWallet;
     connecting: boolean;
     selectedProvider?: SupportedProvider;
     connectedWallet?: SupportedWallet;
@@ -220,7 +227,9 @@ export const WalletList = ({
   // const [waitForPrivyConnecting, setWaitForPrivyConnecting] =
   //   useState<boolean>(false);
   // meteor-hooks context
-  const meteorContext = useContext(MeteorContext);
+  const meteorContext = useContext(MeteorContext) as
+    | MeteorContextType
+    | undefined;
   const { actionConnectWallet, actionCreateCapability } = useAction();
 
   // const { ready: privyReady, authenticated: privyAuthenticated } = usePrivy();
@@ -229,9 +238,10 @@ export const WalletList = ({
   // const { logout: privyLogout } = useLogout();
   // const { createWallet: privyCreateWallet } = useCreateWallet();
 
-  const handleConnectWallet = async (
+  const handleConnectWallet: ConnectWallet = async (
     wallet: SupportedWallet,
     providerType: SupportedProvider | undefined = selectedProvider,
+    noMessage: boolean = false,
   ) => {
     setSelectedProvider(providerType);
     setConnecting(true);
@@ -270,18 +280,18 @@ export const WalletList = ({
       }
       if (!meteorConnector) {
         meteorConnector = new Connector(baseProvider);
-        if (!appId) {
-          if (location.hostname !== "localhost") {
-            const appInfo = await meteorConnector.getDAppInfo({
-              hostname: location.hostname,
-            });
-            appId = appInfo.id;
-          } else {
-            appId = testAppId;
-          }
-        }
       } else {
         meteorConnector.setProvider(baseProvider);
+      }
+      if (!appId) {
+        if (location.hostname !== "localhost") {
+          const appInfo = await meteorConnector.getDAppInfo({
+            hostname: location.hostname,
+          });
+          appId = appInfo.id;
+        } else {
+          appId = testAppId;
+        }
       }
       // connect the real wallet
       let connectRes: {
@@ -417,7 +427,7 @@ export const WalletList = ({
         },
       });
       // setConnected(true);
-      if (meteorContext) {
+      if (meteorContext?.dispatch) {
         const { setConnector } = meteorContext;
         actionConnectWallet(connectRes);
         actionCreateCapability({ pkh, appId: appId! });
@@ -425,16 +435,23 @@ export const WalletList = ({
       }
       onConnect?.(meteorConnector, { ...connectRes, pkh });
       setConnectedWallet(wallet);
-      message.success("Wallet connected successfully.");
+      if (!noMessage) {
+        message.success("Wallet connected successfully.");
+      }
+      return { ...connectRes, pkh };
     } catch (e: any) {
       console.warn(e);
-      message({
-        type: MessageTypes.Error,
-        content: "Failed to connect, " + (e?.message || e),
-        duration: 10e3,
-      });
       // setConnected(false);
       onDisconnect?.();
+      if (!noMessage) {
+        message({
+          type: MessageTypes.Error,
+          content: "Failed to connect, " + (e?.message || e),
+          duration: 10e3,
+        });
+      } else {
+        throw e;
+      }
     } finally {
       setConnecting(false);
     }
@@ -754,16 +771,12 @@ export const useAuth = (
    */
   meteorContext?: MeteorContextType,
 ) => {
-  const [connectWallet, setConnectWallet] =
-    useState<
-      (
-        wallet: SupportedWallet,
-        providerType: SupportedProvider,
-      ) => Promise<void>
-    >();
+  const [connectWallet, setConnectWallet] = useState<ConnectWallet>();
   const [connecting, setConnecting] = useState<boolean>();
   const [selectedProvider, setSelectedProvider] = useState<SupportedProvider>();
   const [connectedWallet, setConnectedWallet] = useState<SupportedWallet>();
+  const [connector, setConnector] = useState<Connector>();
+  const [connectRes, setConnectRes] = useState<ConnectRes>();
 
   useEffect(() => {
     const container = document.createElement("div");
@@ -784,6 +797,10 @@ export const useAuth = (
           setConnecting(connecting);
           setSelectedProvider(selectedProvider);
           setConnectedWallet(connectedWallet);
+        }}
+        onConnectSucceed={(connector, connectRes) => {
+          setConnector(connector);
+          setConnectRes(connectRes);
         }}
       />
     );
@@ -807,5 +824,7 @@ export const useAuth = (
     connecting,
     selectedProvider,
     connectedWallet,
+    connector,
+    connectRes,
   };
 };
