@@ -385,9 +385,9 @@ export const WalletList = ({
       });
       // setConnected(true);
       if (meteorContext) {
-        const { dispatch, setConnector } = meteorContext;
-        dispatch(actionConnectWallet(connectRes));
-        dispatch(actionCreateCapability({ pkh, appId: appId! }));
+        const { setConnector } = meteorContext;
+        actionConnectWallet(connectRes);
+        actionCreateCapability({ pkh, appId: appId! });
         setConnector(meteorConnector);
       }
       onConnect?.(meteorConnector, { ...connectRes, pkh });
