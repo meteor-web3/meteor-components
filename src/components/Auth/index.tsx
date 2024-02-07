@@ -290,7 +290,7 @@ export const WalletList = ({
         wallet: WALLET;
         userInfo?: any;
       };
-      if (selectedProvider !== "meteor-web") {
+      if (providerType !== "meteor-web") {
         if (wallet === WALLET.METAMASK && !window.ethereum) {
           throw "MetaMask is not installed or not enabled.";
         }
@@ -299,11 +299,12 @@ export const WalletList = ({
           preferredAuthType: wallet === "google" ? "google" : undefined,
         });
         if (!connectRes) {
-          if (selectedProvider === undefined) {
-            throw "Connect Wallet Failed! Please Check if not install Dataverse Snap or not enabled MetaMask flask.";
-          } else {
-            throw "Connect Wallet Failed! Please Check if not install Meteor Wallet or not enabled Meteor Wallet.";
-          }
+          // if (providerType === "meteor-snap") {
+          //   throw "Connect Wallet Failed! Please Check if not install Dataverse Snap or not enabled MetaMask flask.";
+          // } else {
+          //   throw "Connect Wallet Failed! Please Check if not install Meteor Wallet or not enabled Meteor Wallet.";
+          // }
+          throw "Connect Wallet Failed! Please Check if not install Meteor Wallet or not enabled Meteor Wallet.";
         }
       } else {
         let ethereumProvider: any;
@@ -779,7 +780,7 @@ export const useAuth = (
           selectedProvider,
           connectedWallet,
         }) => {
-          setConnectWallet(connectWallet);
+          setConnectWallet(() => connectWallet);
           setConnecting(connecting);
           setSelectedProvider(selectedProvider);
           setConnectedWallet(connectedWallet);
