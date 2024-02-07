@@ -31,7 +31,7 @@
     "@emotion/is-prop-valid": "^1.2.1",
     "@meteor-web3/connector": "^1.0.17",
     "@meteor-web3/hooks": "^1.0.10",
-    "@meteor-web3/meteor-iframe": "^0.0.10",
+    "@meteor-web3/meteor-iframe": "^0.0.11",
     "@meteor-web3/utils": "^1.0.0",
     "@mui/icons-material": "^5.15.7",
     "@mui/material": "^5.15.7",
