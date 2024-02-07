@@ -61,14 +61,27 @@ export type StyleConfig = {
 };
 
 export interface AuthProps {
+  /**
+   * If the appId is not set, it will be inferred based on the website domain.
+   * If domain is not localhost, appId will be used from dapp table registry recording to website,
+   * otherwise it will be setting to testAppId.
+   */
   appId?: string;
   walletConfig?: WalletConfig;
   styleConfig?: StyleConfig;
+  /**
+   * Provides a core method and state call without UI component control.
+   * When any item in params is updated, this function will be called.
+   */
   authRef?: (params: {
     connectWallet: (wallet: SupportedWallet) => Promise<void>;
     connecting: boolean;
     connectedWallet?: SupportedWallet;
   }) => void;
+  /**
+   * Called when the connection is successful
+   * @returns meteorConnector(generated inside the component) and ConnectRes
+   */
   onConnectSucceed?: (
     meteorConnector: Connector,
     connectRes: ConnectRes,
@@ -604,6 +617,14 @@ export interface AuthModalProps {
   controlVisible?: boolean;
 }
 
+/**
+ * Provides a pop-up window processing for authentication components,
+ * adding callback parameters when the pop-up window is closed and
+ * parameters that control whether the pop-up window is displayed.
+ *
+ * **Attention** that authProps.onConnectSucceed will be called before onCancel.
+ * If the user connects successfully, the Model will try to automatically close and call onCancel.
+ */
 Auth.Model = function AuthModel({
   authProps,
   onCancel,
@@ -646,6 +667,12 @@ Auth.Model = function AuthModel({
   );
 };
 
+/**
+ * Provides a functional call to the authentication component pop-up window, which can be called anywhere in the code.
+ * The component will be rendered to the page "root", but if you want to use it with meteor-hooks, you must provide meteorContext (used to pass status information), otherwise set meteorContext to undefined/falsy.
+ *
+ * @returns ConnectRes if auth success, otherwise void
+ */
 Auth.openModal = (meteorContext?: MeteorContextType, authProps?: AuthProps) => {
   return new Promise<ConnectRes | void>((resolve, reject) => {
     try {
