@@ -118,6 +118,10 @@ export type ConnectWallet = (
   noMessage?: boolean,
 ) => Promise<ConnectRes | undefined>;
 
+export type AuthCache = {
+  selectedProvider?: SupportedProvider;
+};
+
 export interface AuthProps {
   /**
    * If the appId is not set, it will be inferred based on the website domain.
@@ -127,6 +131,11 @@ export interface AuthProps {
   appId?: string;
   walletConfig?: WalletConfig;
   styleConfig?: StyleConfig;
+  /**
+   * only available when loaded cache from localStorage
+   * @default true
+   */
+  autoConnect?: boolean;
   authRef?: AuthRef;
   /**
    * Called when the connection is successful
@@ -146,18 +155,25 @@ let meteorWebProvider: MeteorWebProvider;
 const testAppId = "9aaae63f-3445-47d5-8785-c23dd16e4965";
 
 export const Auth = ({
-  appId, // if domain is not localhost, appId will be used from dapp table registry recording to website
+  appId,
   walletConfig = {
     enabled: { dataverseSnap: true, meteorWallet: true, meteorWeb: true },
   },
   styleConfig = {
     hidden: false,
   },
+  autoConnect = true,
   authRef,
   onConnectSucceed,
   onClose,
 }: AuthProps) => {
+  const [loadedFromCache, setLoadedFromCache] = useState<boolean>(false);
+  const [autoConnecting, setAutoConnecting] = useState<boolean>(false);
   const [connecting, setConnecting] = useState<boolean>(false);
+  // cache the real appId
+  const [connectingAppId, setConnectingAppId] = useState<string | undefined>(
+    appId,
+  );
   const [connectRes, setConnectRes] = useState<ConnectRes>();
   const [selectedProvider, setSelectedProvider] = useState<SupportedProvider>();
   const [connectedWallet, setConnectedWallet] = useState<SupportedWallet>();
@@ -167,64 +183,84 @@ export const Auth = ({
     | undefined;
   const { actionConnectWallet, actionCreateCapability } = useAction();
 
+  const handleInitConnector = async (providerType?: SupportedProvider) => {
+    // init provider and connector
+    let baseProvider: BaseProvider;
+    switch (providerType) {
+      case "meteor-wallet":
+        if (!meteorWalletProvider || meteorWalletProvider.destroyed) {
+          meteorWalletProvider = new MeteorWalletProvider();
+        }
+        baseProvider = meteorWalletProvider;
+        break;
+      case "meteor-web":
+        if (!meteorWebProvider || meteorWebProvider.destroyed) {
+          meteorWebProvider = new MeteorWebProvider();
+        }
+        baseProvider = meteorWebProvider;
+        break;
+      case "meteor-snap":
+        // if (!snapProvider || snapProvider.destroyed) {
+        //   const snapOrigin = prompt(
+        //     "Please input your snap server url:",
+        //     "http://localhost:8080",
+        //   );
+        //   if (!snapOrigin) {
+        //     throw "Please input your snap server url.";
+        //   }
+        //   snapProvider = new MeteorSnapProvider("local:" + snapOrigin);
+        // }
+        // provider = snapProvider;
+        // break;
+        throw "Coming soon...";
+      default:
+        throw "Not selected any provider or this type of provider is unsupported.";
+    }
+    if (!meteorConnector) {
+      meteorConnector = new Connector(baseProvider);
+    } else {
+      meteorConnector.setProvider(baseProvider);
+    }
+    if (meteorContext?.setConnector) {
+      const { setConnector } = meteorContext;
+      setConnector(meteorConnector);
+    }
+  };
+
+  const getConnectingAppId = async () => {
+    let connectAppId = connectingAppId;
+    if (!connectAppId) {
+      if (location.hostname !== "localhost") {
+        const appInfo = await meteorConnector.getDAppInfo({
+          hostname: location.hostname,
+        });
+        connectAppId = appInfo.id;
+      } else {
+        connectAppId = testAppId;
+      }
+      setConnectingAppId(connectAppId);
+    }
+    return connectAppId;
+  };
+
   const handleConnectWallet: ConnectWallet = async (
     wallet,
     providerType = selectedProvider,
     noMessage = false,
   ) => {
+    if (autoConnecting) {
+      throw "Please wait for auto connecting...";
+    }
+    if (connecting) {
+      throw "Already connecting, please wait...";
+    }
     setConnecting(true);
     if (providerType !== selectedProvider) {
       setSelectedProvider(providerType);
     }
     try {
       // init provider and connector
-      let baseProvider: BaseProvider;
-      switch (providerType) {
-        case "meteor-wallet":
-          if (!meteorWalletProvider || meteorWalletProvider.destroyed) {
-            meteorWalletProvider = new MeteorWalletProvider();
-          }
-          baseProvider = meteorWalletProvider;
-          break;
-        case "meteor-web":
-          if (!meteorWebProvider || meteorWebProvider.destroyed) {
-            meteorWebProvider = new MeteorWebProvider();
-          }
-          baseProvider = meteorWebProvider;
-          break;
-        case "meteor-snap":
-          // if (!snapProvider || snapProvider.destroyed) {
-          //   const snapOrigin = prompt(
-          //     "Please input your snap server url:",
-          //     "http://localhost:8080",
-          //   );
-          //   if (!snapOrigin) {
-          //     throw "Please input your snap server url.";
-          //   }
-          //   snapProvider = new MeteorSnapProvider("local:" + snapOrigin);
-          // }
-          // provider = snapProvider;
-          // break;
-          throw "Coming soon...";
-        default:
-          throw "Unsupported provider.";
-      }
-      if (!meteorConnector) {
-        meteorConnector = new Connector(baseProvider);
-      } else {
-        meteorConnector.setProvider(baseProvider);
-      }
-      let connectAppId = appId;
-      if (!connectAppId) {
-        if (location.hostname !== "localhost") {
-          const appInfo = await meteorConnector.getDAppInfo({
-            hostname: location.hostname,
-          });
-          connectAppId = appInfo.id;
-        } else {
-          connectAppId = testAppId;
-        }
-      }
+      await handleInitConnector(providerType);
       // connect real wallet
       let connectRes: {
         address: string;
@@ -352,6 +388,7 @@ export const Auth = ({
         }
       }
 
+      const connectAppId = await getConnectingAppId();
       const { pkh } = await meteorConnector.runOS({
         method: SYSTEM_CALL.createCapability,
         params: {
@@ -360,10 +397,8 @@ export const Auth = ({
       });
       // setConnected(true);
       if (meteorContext?.dispatch) {
-        const { setConnector } = meteorContext;
         actionConnectWallet(connectRes);
         actionCreateCapability({ pkh, appId: appId! });
-        setConnector(meteorConnector);
       }
       // onConnect?.(meteorConnector, { ...connectRes, pkh });
       setConnectRes({ ...connectRes, pkh });
@@ -390,6 +425,67 @@ export const Auth = ({
     }
   };
 
+  const handleAutoConnect = async (providerType: SupportedProvider) => {
+    setConnecting(true);
+    setAutoConnecting(true);
+    try {
+      await handleInitConnector(providerType);
+
+      const connectAppId = await getConnectingAppId();
+      const hasCapability = await meteorConnector.runOS({
+        method: SYSTEM_CALL.checkCapability,
+        params: {
+          appId: connectAppId,
+        },
+      });
+      if (hasCapability) {
+        const connectResult = await meteorConnector.getCurrentWallet();
+        if (connectResult) {
+          const connectRes = await meteorConnector.connectWallet({
+            wallet: connectResult.wallet,
+          });
+          const pkh = meteorConnector.getCurrentPkh();
+          if (meteorContext?.dispatch) {
+            actionConnectWallet(connectResult);
+            actionCreateCapability({ pkh, appId: connectAppId });
+          }
+          setConnectRes({ ...connectRes, pkh });
+          onConnectSucceed?.(meteorConnector, { ...connectRes, pkh });
+          setConnectedWallet(
+            connectResult.wallet === WALLET.PARTICLE
+              ? "Google"
+              : (connectResult.wallet as SupportedWallet),
+          );
+        }
+      }
+    } catch (e: any) {
+      console.warn(e);
+      setConnectRes(undefined);
+    } finally {
+      setConnecting(false);
+      setAutoConnecting(false);
+    }
+  };
+
+  // handle cache of selectedProvider
+  useEffect(() => {
+    const cache: AuthCache | null = JSON.parse(
+      localStorage.getItem("meteor-components-auth-cache") || "null",
+    );
+    if (cache) {
+      setSelectedProvider(cache.selectedProvider);
+      setLoadedFromCache(true);
+    }
+  }, []);
+
+  // handle autoConnect
+  useEffect(() => {
+    if (selectedProvider) {
+      handleAutoConnect(selectedProvider);
+    }
+  }, [loadedFromCache]);
+
+  // handle ref, used by useAuth hooks
   useEffect(() => {
     authRef?.({
       connectWallet: handleConnectWallet,
