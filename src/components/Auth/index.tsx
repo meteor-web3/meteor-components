@@ -799,7 +799,7 @@ export const useAuth = (
     return () => {
       document.body.removeChild(container);
     };
-  }, []);
+  }, [appId, meteorContext]);
 
   return {
     connectWallet,
