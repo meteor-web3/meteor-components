@@ -1,6 +1,6 @@
 {
   "name": "@meteor-web3/components",
-  "version": "1.0.4",
+  "version": "1.0.11",
   "types": "dist/esm/index.d.ts",
   "main": "dist/cjs/index.js",
   "module": "dist/esm/index.js",
@@ -30,8 +30,8 @@
     "@arcstone/arcstone-sdk": "^1.0.3",
     "@coinbase/wallet-sdk": "^3.7.2",
     "@emotion/is-prop-valid": "^1.2.1",
-    "@meteor-web3/connector": "^1.0.17",
-    "@meteor-web3/hooks": "^1.0.10",
+    "@meteor-web3/connector": "^1.0.19",
+    "@meteor-web3/hooks": "^1.0.11",
     "@meteor-web3/meteor-iframe": "^0.0.11",
     "@meteor-web3/utils": "^1.0.0",
     "@mui/icons-material": "^5.15.7",

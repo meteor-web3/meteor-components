@@ -354,5 +354,4 @@ export const MeteorSnapDetailContainer = styled(motion.div)`
     font-weight: 400;
     line-height: normal;
   }
-
 `;
