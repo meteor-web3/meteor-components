@@ -163,7 +163,7 @@ export const Auth = ({
   styleConfig = {
     hidden: false,
   },
-  autoConnect = true,
+  autoConnect,
   authRef,
   onConnectSucceed,
   onClose,
@@ -488,10 +488,10 @@ export const Auth = ({
 
   // handle autoConnect
   useEffect(() => {
-    if (loadedFromCache && selectedProvider) {
+    if (loadedFromCache && autoConnect && selectedProvider) {
       handleAutoConnect(selectedProvider);
     }
-  }, [loadedFromCache]);
+  }, [loadedFromCache, autoConnect]);
 
   // handle ref, used by useAuth hooks
   useEffect(() => {
