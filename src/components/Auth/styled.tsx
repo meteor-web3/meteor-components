@@ -21,6 +21,9 @@ export const EmbedWalletContainer = styled(motion.div)<{
   * {
     box-sizing: border-box;
   }
+  p {
+    margin: 0;
+  }
 
   .wallet-list {
     width: 336px;
@@ -31,7 +34,7 @@ export const EmbedWalletContainer = styled(motion.div)<{
       text-align: left;
       padding: 0 10px 16px 10px;
       color: #232325;
-      font-family: Manrope;
+      font-family: Manrope-Bold;
       font-size: 20px;
       font-style: normal;
       font-weight: 700;
@@ -124,7 +127,7 @@ export const WalletListContainer = styled(motion.div)`
     width: 100%;
     line-height: 24px;
     color: #232325;
-    font-family: Manrope;
+    font-family: Manrope-Bold;
     font-size: 18px;
     font-style: normal;
     font-weight: 700;
@@ -168,6 +171,7 @@ export const WalletListContainer = styled(motion.div)`
 export const DetailContainer = styled(motion.div)`
   padding: 21px;
   width: 100%;
+  height: 100%;
   display: flex;
   flex-direction: column;
   gap: 12px;
@@ -178,7 +182,7 @@ export const DetailContainer = styled(motion.div)`
   }
   .title {
     color: #232325;
-    font-family: Manrope;
+    font-family: Manrope-Bold;
     font-size: 20px;
     font-style: normal;
     font-weight: 700;
@@ -191,7 +195,7 @@ export const DetailContainer = styled(motion.div)`
     padding: 0 49px;
     .sub-title {
       color: #232325;
-      font-family: Manrope;
+      font-family: Manrope-Bold;
       font-size: 18px;
       font-style: normal;
       font-weight: 700;
@@ -228,6 +232,33 @@ export const DetailContainer = styled(motion.div)`
     line-height: 33px;
     cursor: pointer;
   }
+
+  .description {
+    /* font */
+    font-family: Manrope-Medium;
+    font-size: 16px;
+    font-weight: 500;
+    line-height: 22px;
+    letter-spacing: 0em;
+    text-align: center;
+    color: #76b8ff;
+  }
+
+  .loading-container {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    .title {
+      padding: 0;
+      margin-top: 40px;
+    }
+    .description {
+      margin-top: 11px;
+    }
+  }
 `;
 
 export const MeteorWalletDetailContainer = styled(motion.div)`
@@ -251,7 +282,7 @@ export const MeteorWalletDetailContainer = styled(motion.div)`
   .tip {
     color: #232325;
     text-align: center;
-    font-family: Manrope;
+    font-family: Manrope-SemiBold;
     font-size: 18px;
     font-style: normal;
     font-weight: 600;
@@ -293,7 +324,7 @@ export const MeteorWalletDetailContainer = styled(motion.div)`
     .name {
       white-space: nowrap;
       color: #404f62;
-      font-family: Manrope;
+      font-family: Manrope-SemiBold;
       font-size: 16px;
       font-style: normal;
       font-weight: 600;
@@ -335,7 +366,7 @@ export const MeteorWebDetailContainer = styled(motion.div)`
     .name {
       white-space: nowrap;
       color: #404f62;
-      font-family: Manrope;
+      font-family: Manrope-SemiBold;
       font-size: 16px;
       font-style: normal;
       font-weight: 600;

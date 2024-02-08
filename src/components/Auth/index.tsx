@@ -55,10 +55,15 @@ import aggregatorSVG from "@/assets/icon/aggregator.svg";
 import authenticatorSVG from "@/assets/icon/authenticator.svg";
 import closeSVG from "@/assets/icon/close2.svg";
 import coinbaseSVG from "@/assets/icon/coinbase.svg";
+import ConnectingCapabilitySvg from "@/assets/icon/connecting-capability.svg";
+import ConnectingWalletSvg from "@/assets/icon/connecting-wallet.svg";
 import downloadSVG from "@/assets/icon/download.svg";
 import googleSVG from "@/assets/icon/google.svg";
 import metamaskSVG from "@/assets/icon/metamask.svg";
 import metamaskSnapSVG from "@/assets/icon/metamaskSnap.svg";
+import MeteorSnapSvg from "@/assets/icon/meteor-snap.svg";
+import MeteorWalletSvg from "@/assets/icon/meteor-wallet.svg";
+import MeteorWebSvg from "@/assets/icon/meteor-web.svg";
 import meteorWalletScreenshotPNG from "@/assets/icon/meteorWalletScreenshot.png";
 import walletConnectSVG from "@/assets/icon/walletConnect.svg";
 import { uuid } from "@/utils/uuid";
@@ -99,7 +104,7 @@ export type SupportedProvider = "meteor-wallet" | "meteor-web" | "meteor-snap";
  */
 export type AuthRef = (params: {
   connectWallet: ConnectWallet;
-  connecting: boolean;
+  connecting: ConnectingStatus;
   autoConnecting: boolean;
   selectedProvider?: SupportedProvider;
   connectedWallet?: SupportedWallet;
@@ -123,6 +128,11 @@ export type AuthCache = {
   selectedProvider?: SupportedProvider;
   connectedWallet?: SupportedWallet;
 };
+
+export type ConnectingStatus =
+  | boolean
+  | "connectingWallet"
+  | "connectingCapability";
 
 export interface AuthProps {
   /**
@@ -247,7 +257,7 @@ export const Auth = ({
   const [autoConnecting, setAutoConnecting] = useState<boolean>(
     autoConnect || false,
   );
-  const [connecting, setConnecting] = useState<boolean>(false);
+  const [connecting, setConnecting] = useState<ConnectingStatus>(false);
   // cache the real appId
   const [connectingAppId, setConnectingAppId] = useState<string | undefined>(
     appId,
@@ -338,6 +348,7 @@ export const Auth = ({
     }
     try {
       // init provider and connector
+      setConnecting("connectingWallet");
       await handleInitConnector(providerType);
       // connect real wallet
       let connectRes: {
@@ -388,6 +399,7 @@ export const Auth = ({
         }
       }
 
+      setConnecting("connectingCapability");
       const connectAppId = await getConnectingAppId();
       const { pkh } = await meteorConnector.runOS({
         method: SYSTEM_CALL.createCapability,
@@ -576,6 +588,7 @@ export const Auth = ({
       <div className='detail'>
         <Detail
           selectedProvider={selectedProvider}
+          connecting={connecting}
           handleConnectWallet={handleConnectWallet}
           onClose={onClose}
         />
@@ -585,13 +598,13 @@ export const Auth = ({
   );
 };
 
-export interface WalletListProps {
+interface WalletListProps {
   walletConfig?: WalletConfig;
   onChange?: (provider?: SupportedProvider) => void;
 }
 
 // pure-ui
-export const WalletList = ({ walletConfig, onChange }: WalletListProps) => {
+const WalletList = ({ walletConfig, onChange }: WalletListProps) => {
   const [selectedProvider, setSelectedProvider] = useState<SupportedProvider>();
 
   useEffect(() => {
@@ -600,6 +613,20 @@ export const WalletList = ({ walletConfig, onChange }: WalletListProps) => {
 
   const walletProviders = (
     <>
+      <Tooltip
+        arrow
+        placement='right'
+        title='You may need to pre-install the Meteor-Wallet browser extension before using it. Only MetaMask stable is available, you need to disable MetaMask flask.'
+      >
+        <div
+          className='wallet-item'
+          data-disabled={walletConfig?.enabled?.meteorWallet === false}
+          onClick={() => setSelectedProvider("meteor-wallet")}
+        >
+          <img className='wallet-logo' src={MeteorWalletSvg} />
+          Meteor Wallet
+        </div>
+      </Tooltip>
       <Tooltip
         arrow
         placement='right'
@@ -617,28 +644,8 @@ export const WalletList = ({ walletConfig, onChange }: WalletListProps) => {
             message.info("Coming soon...");
           }}
         >
-          <img
-            className='wallet-logo'
-            src='https://avatars.githubusercontent.com/u/11744586?s=200&v=4'
-          />
+          <img className='wallet-logo' src={MeteorSnapSvg} />
           Meteor Snap
-        </div>
-      </Tooltip>
-      <Tooltip
-        arrow
-        placement='right'
-        title='You may need to pre-install the Meteor-Wallet browser extension before using it. Only MetaMask stable is available, you need to disable MetaMask flask.'
-      >
-        <div
-          className='wallet-item'
-          data-disabled={walletConfig?.enabled?.meteorWallet === false}
-          onClick={() => setSelectedProvider("meteor-wallet")}
-        >
-          <img
-            className='wallet-logo'
-            src='https://avatars.githubusercontent.com/u/118692557?s=200&v=4'
-          />
-          Meteor Wallet
         </div>
       </Tooltip>
       <Tooltip
@@ -651,7 +658,7 @@ export const WalletList = ({ walletConfig, onChange }: WalletListProps) => {
           data-disabled={walletConfig?.enabled?.meteorWeb === false}
           onClick={() => setSelectedProvider("meteor-web")}
         >
-          <span className='wallet-logo'>🌈</span>
+          <img className='wallet-logo' src={MeteorWebSvg} />
           Meteor Web
         </div>
       </Tooltip>
@@ -700,30 +707,45 @@ export const WalletList = ({ walletConfig, onChange }: WalletListProps) => {
   );
 };
 
-export interface DetailProps {
+interface DetailProps {
   selectedProvider?: SupportedProvider;
+  connecting?: ConnectingStatus;
   handleConnectWallet: ConnectWallet;
   onClose?: () => void;
 }
 
-// pure-ui
-export const Detail = ({
+const Detail = ({
   selectedProvider,
+  connecting,
   handleConnectWallet,
   onClose,
 }: DetailProps) => {
+  const [isMeteorInstalled, setIsMeteorInstalled] = useState(false);
+
+  useEffect(() => {
+    detectMeteorExtension().then(res => setIsMeteorInstalled(res));
+  }, []);
+
   return (
     <DetailContainer>
       <img src={closeSVG} className='close' onClick={() => onClose?.()} />
-      {selectedProvider === "meteor-wallet" ? (
-        <MeteorWalletDetail handleConnectWallet={handleConnectWallet} />
-      ) : selectedProvider === "meteor-web" ? (
-        <MeteorWebDetail handleConnectWallet={handleConnectWallet} />
-      ) : selectedProvider === "meteor-snap" ? (
-        <MeteorSnapDetail handleConnectWallet={handleConnectWallet} />
-      ) : (
-        <DefaultDetail />
+      {!connecting && (
+        <>
+          {selectedProvider === "meteor-wallet" ? (
+            <MeteorWalletDetail
+              handleConnectWallet={handleConnectWallet}
+              isMeteorInstalled={isMeteorInstalled}
+            />
+          ) : selectedProvider === "meteor-web" ? (
+            <MeteorWebDetail handleConnectWallet={handleConnectWallet} />
+          ) : selectedProvider === "meteor-snap" ? (
+            <MeteorSnapDetail handleConnectWallet={handleConnectWallet} />
+          ) : (
+            <DefaultDetail />
+          )}
+        </>
       )}
+      {connecting && <Loading connecting={connecting} />}
     </DetailContainer>
   );
 };
@@ -739,17 +761,13 @@ const innerWalletList = [
   { wallet: WALLET.COINBASE, name: WALLET.COINBASE, logo: coinbaseSVG },
 ];
 
-export const MeteorWalletDetail = ({
+const MeteorWalletDetail = ({
   handleConnectWallet,
+  isMeteorInstalled,
 }: {
   handleConnectWallet: (wallet: SupportedWallet) => void;
+  isMeteorInstalled?: boolean;
 }) => {
-  const [isMeteorInstalled, setIsMeteorInstalled] = useState(false);
-
-  useEffect(() => {
-    detectMeteorExtension().then(res => setIsMeteorInstalled(res));
-  });
-
   return (
     <MeteorWalletDetailContainer>
       {isMeteorInstalled ? (
@@ -789,7 +807,7 @@ export const MeteorWalletDetail = ({
   );
 };
 
-export const MeteorWebDetail = ({
+const MeteorWebDetail = ({
   handleConnectWallet,
 }: {
   handleConnectWallet: (wallet: SupportedWallet) => void;
@@ -817,7 +835,7 @@ export const MeteorWebDetail = ({
   );
 };
 
-export const MeteorSnapDetail = ({
+const MeteorSnapDetail = ({
   handleConnectWallet,
 }: {
   handleConnectWallet: (wallet: SupportedWallet) => void;
@@ -846,7 +864,7 @@ export const MeteorSnapDetail = ({
   );
 };
 
-export const DefaultDetail = () => {
+const DefaultDetail = () => {
   return (
     <div>
       <div className='title'>What is Dataverse Wallet?</div>
@@ -869,9 +887,36 @@ export const DefaultDetail = () => {
           </div>
         </div>
       </div>
-      <div className='learn-more' onClick={() => window.open("")}>
+      <div
+        className='learn-more'
+        onClick={() =>
+          window.open("https://docs.meteor.computer/meteor-wallet", "_blank")
+        }
+      >
         learn more
       </div>
+    </div>
+  );
+};
+
+const Loading = ({ connecting }: { connecting?: ConnectingStatus }) => {
+  return (
+    <div className='loading-container'>
+      {connecting === "connectingWallet" && (
+        <>
+          <img src={ConnectingWalletSvg} />
+          <p className='title'>Connecting wallet...</p>
+          <p className='description'>Confirm connection in the popup</p>
+        </>
+      )}
+      {connecting === "connectingCapability" && (
+        <>
+          <img src={ConnectingCapabilitySvg} />
+          <p className='title'>Sign a Message</p>
+          <p className='description'>To verify you are the owner of data</p>
+        </>
+      )}
+      <CircularProgress style={{ marginTop: "41px" }} />
     </div>
   );
 };
@@ -1009,7 +1054,7 @@ export const useAuth = ({
   autoConnect?: boolean;
 }) => {
   const [connectWallet, setConnectWallet] = useState<ConnectWallet>();
-  const [connecting, setConnecting] = useState<boolean>();
+  const [connecting, setConnecting] = useState<ConnectingStatus>();
   const [autoConnecting, setAutoConnecting] = useState<boolean>(
     autoConnect || false,
   );
