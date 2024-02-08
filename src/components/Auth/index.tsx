@@ -1022,35 +1022,36 @@ export const useAuth = ({
     localStorage.setItem(AUTH_CACHE_KEY, "null");
   };
 
+  const authComponent = (
+    <Auth
+      styleConfig={{
+        hidden: true,
+      }}
+      appId={appId}
+      autoConnect={autoConnect}
+      authRef={({
+        connectWallet,
+        connecting,
+        autoConnecting,
+        selectedProvider,
+        connectedWallet,
+      }) => {
+        setConnectWallet(() => connectWallet);
+        setConnecting(connecting);
+        setAutoConnecting(autoConnecting);
+        setSelectedProvider(selectedProvider);
+        setConnectedWallet(connectedWallet);
+      }}
+      onConnectSucceed={(connector, connectRes) => {
+        setConnector(connector);
+        setConnectRes(connectRes);
+      }}
+    />
+  );
+
   useEffect(() => {
     const container = document.createElement("div");
     document.body.appendChild(container);
-    const authComponent = (
-      <Auth
-        styleConfig={{
-          hidden: true,
-        }}
-        appId={appId}
-        autoConnect={autoConnect}
-        authRef={({
-          connectWallet,
-          connecting,
-          autoConnecting,
-          selectedProvider,
-          connectedWallet,
-        }) => {
-          setConnectWallet(() => connectWallet);
-          setConnecting(connecting);
-          setAutoConnecting(autoConnecting);
-          setSelectedProvider(selectedProvider);
-          setConnectedWallet(connectedWallet);
-        }}
-        onConnectSucceed={(connector, connectRes) => {
-          setConnector(connector);
-          setConnectRes(connectRes);
-        }}
-      />
-    );
     ReactDOM.render(
       meteorContext ? (
         <MeteorContext.Provider value={meteorContext}>
@@ -1064,7 +1065,7 @@ export const useAuth = ({
     return () => {
       document.body.removeChild(container);
     };
-  }, [appId, meteorContext]);
+  }, []);
 
   return {
     connectWallet,
