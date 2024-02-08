@@ -62,7 +62,7 @@ const config = defineConfig({
       formats: ["es", "cjs"],
       fileName: "index",
     },
-    sourcemap: true,
+    sourcemap: false,
     emptyOutDir: true,
   },
   esbuild: {

@@ -153,6 +153,7 @@ let snapProvider: MeteorSnapProvider;
 let meteorWalletProvider: MeteorWalletProvider;
 let meteorWebProvider: MeteorWebProvider;
 const testAppId = "9aaae63f-3445-47d5-8785-c23dd16e4965";
+const AUTH_CACHE_KEY = "meteor-components-auth-cache";
 
 export const Auth = ({
   appId,
@@ -404,6 +405,13 @@ export const Auth = ({
       setConnectRes({ ...connectRes, pkh });
       onConnectSucceed?.(meteorConnector, { ...connectRes, pkh });
       setConnectedWallet(wallet);
+      // save cache to localStorage
+      localStorage.setItem(
+        AUTH_CACHE_KEY,
+        JSON.stringify({
+          selectedProvider,
+        } as AuthCache),
+      );
       if (!noMessage) {
         message.success("Wallet connected successfully.");
       }
@@ -470,7 +478,7 @@ export const Auth = ({
   // handle cache of selectedProvider
   useEffect(() => {
     const cache: AuthCache | null = JSON.parse(
-      localStorage.getItem("meteor-components-auth-cache") || "null",
+      localStorage.getItem(AUTH_CACHE_KEY) || "null",
     );
     if (cache) {
       setSelectedProvider(cache.selectedProvider);
@@ -480,7 +488,7 @@ export const Auth = ({
 
   // handle autoConnect
   useEffect(() => {
-    if (selectedProvider) {
+    if (loadedFromCache && selectedProvider) {
       handleAutoConnect(selectedProvider);
     }
   }, [loadedFromCache]);
