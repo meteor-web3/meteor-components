@@ -16,6 +16,11 @@ export const EmbedWalletContainer = styled(motion.div)<{
   font-size: 14px;
   line-height: 20px;
   overflow: hidden;
+  box-sizing: border-box;
+
+  * {
+    box-sizing: border-box;
+  }
 
   .wallet-list {
     width: 336px;
@@ -169,6 +174,7 @@ export const DetailContainer = styled(motion.div)`
   .close {
     width: 33px;
     margin-left: auto;
+    cursor: pointer;
   }
   .title {
     color: #232325;

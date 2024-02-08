@@ -100,6 +100,7 @@ export type SupportedProvider = "meteor-wallet" | "meteor-web" | "meteor-snap";
 export type AuthRef = (params: {
   connectWallet: ConnectWallet;
   connecting: boolean;
+  autoConnecting: boolean;
   selectedProvider?: SupportedProvider;
   connectedWallet?: SupportedWallet;
   connectRes?: ConnectRes;
@@ -120,6 +121,7 @@ export type ConnectWallet = (
 
 export type AuthCache = {
   selectedProvider?: SupportedProvider;
+  connectedWallet?: SupportedWallet;
 };
 
 export interface AuthProps {
@@ -155,6 +157,79 @@ let meteorWebProvider: MeteorWebProvider;
 const testAppId = "9aaae63f-3445-47d5-8785-c23dd16e4965";
 const AUTH_CACHE_KEY = "meteor-components-auth-cache";
 
+const getParticleProvider = async () => {
+  const preferredAuthType: AuthType = "google";
+  const chainId = 1;
+  const chainName = "Ethereum";
+  const particle = new ParticleNetwork({
+    projectId: "12a93f47-6f21-4e4e-888b-9a4b57933c86",
+    clientKey: "cMIDP67n1NvlnlOoiG7CLSfvpwRrTaJZQJJKkZJ1",
+    appId: "bc6dab3a-9da1-4324-9e71-8f879de9d7b4",
+    chainName, //optional: current chain name, default Ethereum.
+    chainId, //optional: current chain id, default 1.
+    wallet: {
+      //optional: by default, the wallet entry is displayed in the bottom right corner of the webpage.
+      displayWalletEntry: false, //show wallet entry when connect particle.
+      // defaultWalletEntryPosition: WalletEntryPosition.BR, //wallet entry position
+      uiMode: "light", //optional: light or dark, if not set, the default is the same as web auth.
+      supportChains: [
+        { id: 137, name: "polygon" },
+        { id: 80001, name: "polygon" },
+      ], // optional: web wallet support chains.
+      customStyle: {}, //optional: custom wallet style
+    },
+  });
+  const particleProvider = new ParticleProvider(particle.auth);
+  if (!particle.auth.isLogin()) {
+    if (preferredAuthType) {
+      await particle.auth.login({
+        preferredAuthType, //support facebook,google,twitter,apple,discord,github,twitch,microsoft,linkedin etc.
+      });
+    } else {
+      await particleProvider.enable();
+    }
+  }
+  return particleProvider;
+};
+
+const getMetamaskProvider = () => {
+  if (!window.ethereum) {
+    throw "MetaMask is not installed or not enabled.";
+  }
+  return window.ethereum;
+};
+
+const getCoinbaseProvider = () => {
+  const chainId = 1;
+  const jsonRpcUrl = "https://mainnet.infura.io/v3";
+  const coinbaseWallet = new CoinbaseWalletSDK({
+    appName: "Meteor",
+    darkMode: false,
+  });
+  const coinbaseProvider = coinbaseWallet.makeWeb3Provider(jsonRpcUrl, chainId);
+  return coinbaseProvider;
+};
+
+const getWalletConnectProvider = async () => {
+  const client = await EthereumProvider.init({
+    // use your own projectId to make sure connect successfully
+    projectId: "de2a6e522f354b90448adfa7c76d9c05",
+    showQrModal: true,
+    chains: [1],
+    optionalChains: [80001],
+    methods: [
+      "wallet_switchEthereumChain",
+      "wallet_addEthereumChain",
+      "eth_sendTransaction",
+      "personal_sign",
+      "eth_signTypedData_v4",
+    ],
+    events: ["chainChanged", "accountsChanged"],
+  });
+  await client.enable();
+  return client;
+};
+
 export const Auth = ({
   appId,
   walletConfig = {
@@ -169,7 +244,9 @@ export const Auth = ({
   onClose,
 }: AuthProps) => {
   const [loadedFromCache, setLoadedFromCache] = useState<boolean>(false);
-  const [autoConnecting, setAutoConnecting] = useState<boolean>(false);
+  const [autoConnecting, setAutoConnecting] = useState<boolean>(
+    autoConnect || false,
+  );
   const [connecting, setConnecting] = useState<boolean>(false);
   // cache the real appId
   const [connectingAppId, setConnectingAppId] = useState<string | undefined>(
@@ -287,99 +364,21 @@ export const Auth = ({
         }
       } else {
         let ethereumProvider: any;
-        if (wallet === "Google") {
-          // if (!privyReady) {
-          //   throw "Privy is not ready, please waiting...";
-          // }
-          // const embededWallet = privyWallets.find(
-          //   wallet => wallet.walletClientType === "privy",
-          // );
-          // if (!embededWallet) {
-          //   setWaitForPrivyConnecting(true);
-          //   if (!privyAuthenticated) {
-          //     privyLogin();
-          //   } else {
-          //     privyCreateWallet();
-          //   }
-          //   return;
-          // } else {
-          //   ethereumProvider = await embededWallet.getEthereumProvider();
-          // }
-          const preferredAuthType: AuthType = "google";
-          const chainId = 1;
-          const chainName = "Ethereum";
-          const particle = new ParticleNetwork({
-            projectId: "12a93f47-6f21-4e4e-888b-9a4b57933c86",
-            clientKey: "cMIDP67n1NvlnlOoiG7CLSfvpwRrTaJZQJJKkZJ1",
-            appId: "bc6dab3a-9da1-4324-9e71-8f879de9d7b4",
-            chainName, //optional: current chain name, default Ethereum.
-            chainId, //optional: current chain id, default 1.
-            wallet: {
-              //optional: by default, the wallet entry is displayed in the bottom right corner of the webpage.
-              displayWalletEntry: false, //show wallet entry when connect particle.
-              // defaultWalletEntryPosition: WalletEntryPosition.BR, //wallet entry position
-              uiMode: "light", //optional: light or dark, if not set, the default is the same as web auth.
-              supportChains: [
-                { id: 137, name: "polygon" },
-                { id: 80001, name: "polygon" },
-              ], // optional: web wallet support chains.
-              customStyle: {}, //optional: custom wallet style
-            },
-          });
-          const particleProvider = new ParticleProvider(particle.auth);
-          if (!particle.auth.isLogin()) {
-            if (preferredAuthType) {
-              await particle.auth.login({
-                preferredAuthType, //support facebook,google,twitter,apple,discord,github,twitch,microsoft,linkedin etc.
-              });
-            } else {
-              await particleProvider.enable();
-            }
-          }
-          ethereumProvider = particleProvider;
-        } else {
-          switch (wallet) {
-            case WALLET.METAMASK:
-              if (!window.ethereum) {
-                throw "MetaMask is not installed or not enabled.";
-              }
-              ethereumProvider = window.ethereum;
-              break;
-            case WALLET.COINBASE:
-              const chainId = 1;
-              const jsonRpcUrl = "https://mainnet.infura.io/v3";
-              const coinbaseWallet = new CoinbaseWalletSDK({
-                appName: "Meteor",
-                darkMode: false,
-              });
-              const coinbaseProvider = coinbaseWallet.makeWeb3Provider(
-                jsonRpcUrl,
-                chainId,
-              );
-              ethereumProvider = coinbaseProvider;
-              break;
-            case WALLET.WALLETCONNECT:
-              const client = await EthereumProvider.init({
-                // use your own projectId to make sure connect successfully
-                projectId: "de2a6e522f354b90448adfa7c76d9c05",
-                showQrModal: true,
-                chains: [1],
-                optionalChains: [80001],
-                methods: [
-                  "wallet_switchEthereumChain",
-                  "wallet_addEthereumChain",
-                  "eth_sendTransaction",
-                  "personal_sign",
-                  "eth_signTypedData_v4",
-                ],
-                events: ["chainChanged", "accountsChanged"],
-              });
-              await client.enable();
-              ethereumProvider = client;
-              break;
-            default:
-              throw "Unsupported wallet";
-          }
+        switch (wallet) {
+          case "Google":
+            ethereumProvider = await getParticleProvider();
+            break;
+          case WALLET.METAMASK:
+            ethereumProvider = getMetamaskProvider();
+            break;
+          case WALLET.COINBASE:
+            ethereumProvider = getCoinbaseProvider();
+            break;
+          case WALLET.WALLETCONNECT:
+            ethereumProvider = await getWalletConnectProvider();
+            break;
+          default:
+            throw "Unsupported wallet";
         }
         connectRes = await meteorConnector.connectWallet({
           provider: ethereumProvider,
@@ -409,7 +408,8 @@ export const Auth = ({
       localStorage.setItem(
         AUTH_CACHE_KEY,
         JSON.stringify({
-          selectedProvider,
+          selectedProvider: providerType,
+          connectedWallet: wallet,
         } as AuthCache),
       );
       if (!noMessage) {
@@ -433,12 +433,37 @@ export const Auth = ({
     }
   };
 
-  const handleAutoConnect = async (providerType: SupportedProvider) => {
+  const handleAutoConnect = async (
+    providerType: SupportedProvider,
+    walletType: SupportedWallet,
+  ) => {
     setConnecting(true);
     setAutoConnecting(true);
     try {
       await handleInitConnector(providerType);
 
+      if (providerType === "meteor-web") {
+        let ethereumProvider: any;
+        switch (walletType) {
+          case "Google":
+            ethereumProvider = await getParticleProvider();
+            break;
+          case WALLET.METAMASK:
+            ethereumProvider = getMetamaskProvider();
+            break;
+          case WALLET.COINBASE:
+            ethereumProvider = getCoinbaseProvider();
+            break;
+          case WALLET.WALLETCONNECT:
+            ethereumProvider = await getWalletConnectProvider();
+            break;
+          default:
+            throw "Unsupported wallet";
+        }
+        await (
+          meteorConnector.getProvider() as MeteorWebProvider
+        ).setExternalProvider(ethereumProvider);
+      }
       const connectAppId = await getConnectingAppId();
       const hasCapability = await meteorConnector.runOS({
         method: SYSTEM_CALL.checkCapability,
@@ -482,14 +507,17 @@ export const Auth = ({
     );
     if (cache) {
       setSelectedProvider(cache.selectedProvider);
+      setConnectedWallet(cache.connectedWallet);
       setLoadedFromCache(true);
+    } else {
+      setAutoConnecting(false);
     }
   }, []);
 
   // handle autoConnect
   useEffect(() => {
-    if (loadedFromCache && autoConnect && selectedProvider) {
-      handleAutoConnect(selectedProvider);
+    if (loadedFromCache && autoConnect && selectedProvider && connectedWallet) {
+      handleAutoConnect(selectedProvider, connectedWallet);
     }
   }, [loadedFromCache, autoConnect]);
 
@@ -498,6 +526,7 @@ export const Auth = ({
     authRef?.({
       connectWallet: handleConnectWallet,
       connecting,
+      autoConnecting,
       selectedProvider,
       connectedWallet,
       connectRes,
@@ -847,6 +876,13 @@ export const DefaultDetail = () => {
   );
 };
 
+/**
+ * remove localStorage cache, next autoConnect will be invalidated
+ */
+Auth.clearAuthCache = () => {
+  localStorage.setItem(AUTH_CACHE_KEY, "null");
+};
+
 export interface AuthModalProps {
   authProps?: AuthProps;
   onCancel?: () => void;
@@ -955,24 +991,36 @@ Auth.openModal = (authProps?: AuthProps, meteorContext?: MeteorContextType) => {
 /**
  * Providing a functional authentication method will not generate any UI components, but let developers choose how to connect.
  */
-export const useAuth = (
+export const useAuth = ({
+  appId,
+  meteorContext,
+  autoConnect,
+}: {
   /**
    * If the appId is not set, it will be inferred based on the website domain.
    * If domain is not localhost, appId will be used from dapp table registry recording to website,
    * otherwise it will be setting to testAppId.
    */
-  appId?: string,
+  appId?: string;
   /**
    * If you want to use it with meteor-hooks, you must provide meteorContext (used to pass status information), otherwise set meteorContext to undefined/falsy.
    */
-  meteorContext?: MeteorContextType,
-) => {
+  meteorContext?: MeteorContextType;
+  autoConnect?: boolean;
+}) => {
   const [connectWallet, setConnectWallet] = useState<ConnectWallet>();
   const [connecting, setConnecting] = useState<boolean>();
+  const [autoConnecting, setAutoConnecting] = useState<boolean>(
+    autoConnect || false,
+  );
   const [selectedProvider, setSelectedProvider] = useState<SupportedProvider>();
   const [connectedWallet, setConnectedWallet] = useState<SupportedWallet>();
   const [connector, setConnector] = useState<Connector>();
   const [connectRes, setConnectRes] = useState<ConnectRes>();
+
+  const clearAuthCache = () => {
+    localStorage.setItem(AUTH_CACHE_KEY, "null");
+  };
 
   useEffect(() => {
     const container = document.createElement("div");
@@ -983,14 +1031,17 @@ export const useAuth = (
           hidden: true,
         }}
         appId={appId}
+        autoConnect={autoConnect}
         authRef={({
           connectWallet,
           connecting,
+          autoConnecting,
           selectedProvider,
           connectedWallet,
         }) => {
           setConnectWallet(() => connectWallet);
           setConnecting(connecting);
+          setAutoConnecting(autoConnecting);
           setSelectedProvider(selectedProvider);
           setConnectedWallet(connectedWallet);
         }}
@@ -1018,9 +1069,11 @@ export const useAuth = (
   return {
     connectWallet,
     connecting,
+    autoConnecting,
     selectedProvider,
     connectedWallet,
     connector,
     connectRes,
+    clearAuthCache,
   };
 };
