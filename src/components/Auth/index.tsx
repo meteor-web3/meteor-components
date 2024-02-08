@@ -64,7 +64,7 @@ import metamaskSnapSVG from "@/assets/icon/metamaskSnap.svg";
 import MeteorSnapSvg from "@/assets/icon/meteor-snap.svg";
 import MeteorWalletSvg from "@/assets/icon/meteor-wallet.svg";
 import MeteorWebSvg from "@/assets/icon/meteor-web.svg";
-import meteorWalletScreenshotPNG from "@/assets/icon/meteorWalletScreenshot.png";
+import meteorWalletScreenshotSVG from "@/assets/icon/meteorWalletScreenshot.svg";
 import walletConnectSVG from "@/assets/icon/walletConnect.svg";
 import { uuid } from "@/utils/uuid";
 
@@ -573,7 +573,7 @@ export const Auth = ({
     >
       <div className='wallet-list'>
         <div className='top-tip'>Connect data wallet</div>
-        <div className='tip'>Prevalent</div>
+        {/* <div className='tip'>Prevalent</div> */}
         {/* {connectRes && (
           <div className='connected'>
             <p>{connectRes.address}</p>
@@ -619,7 +619,12 @@ const WalletList = ({ walletConfig, onChange }: WalletListProps) => {
         title='You may need to pre-install the Meteor-Wallet browser extension before using it. Only MetaMask stable is available, you need to disable MetaMask flask.'
       >
         <div
-          className='wallet-item'
+          className={`wallet-item`}
+          css={css`
+            background-color: ${selectedProvider === "meteor-wallet" &&
+            "#007aff !important"};
+            color: ${selectedProvider === "meteor-wallet" && "#fff !important"};
+          `}
           data-disabled={walletConfig?.enabled?.meteorWallet === false}
           onClick={() => setSelectedProvider("meteor-wallet")}
         >
@@ -635,7 +640,11 @@ const WalletList = ({ walletConfig, onChange }: WalletListProps) => {
         <div
           className='wallet-item'
           css={css`
-            color: grey;
+            background-color: ${selectedProvider === "meteor-snap" &&
+            "#007aff !important"};
+            color: ${selectedProvider === "meteor-snap"
+              ? "#fff !important"
+              : "grey"};
           `}
           data-disabled={walletConfig?.enabled?.dataverseSnap === false}
           data-unavailable={true}
@@ -655,6 +664,11 @@ const WalletList = ({ walletConfig, onChange }: WalletListProps) => {
       >
         <div
           className='wallet-item'
+          css={css`
+            background-color: ${selectedProvider === "meteor-web" &&
+            "#007aff !important"};
+            color: ${selectedProvider === "meteor-web" && "#fff !important"};
+          `}
           data-disabled={walletConfig?.enabled?.meteorWeb === false}
           onClick={() => setSelectedProvider("meteor-web")}
         >
@@ -792,7 +806,7 @@ const MeteorWalletDetail = ({
             your credentials, attestations, licenses, event tickets, and more —
             all in one place
           </div>
-          <img src={meteorWalletScreenshotPNG} className='screenshot' />
+          <img src={meteorWalletScreenshotSVG} className='screenshot' />
           <div className='tip'>Don&#39;t have Meteor wallet?</div>
           <div
             className='install'

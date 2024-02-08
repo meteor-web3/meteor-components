@@ -32,7 +32,7 @@ export const EmbedWalletContainer = styled(motion.div)<{
 
     .top-tip {
       text-align: left;
-      padding: 0 10px 16px 10px;
+      padding: 0 10px 26px 10px;
       color: #232325;
       font-family: Manrope-Bold;
       font-size: 20px;
@@ -141,7 +141,7 @@ export const WalletListContainer = styled(motion.div)`
     transition: background-color 200ms ease 0s;
     cursor: pointer;
     /* border: 1px solid hsl(0, 0%, 92%); */
-
+    
     &:hover {
       background-color: #007aff;
       color: white;
@@ -157,6 +157,9 @@ export const WalletListContainer = styled(motion.div)`
         background-color: #007aff;
         color: white;
       }
+    }
+    .selected {
+      background-color: #007aff !important;
     }
 
     .wallet-logo {
@@ -192,7 +195,7 @@ export const DetailContainer = styled(motion.div)`
   .aggregator-box,
   .authenticator-box {
     display: flex;
-    padding: 0 49px;
+    padding: 10px 49px;
     .sub-title {
       color: #232325;
       font-family: Manrope-Bold;
