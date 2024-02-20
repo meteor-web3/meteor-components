@@ -64,7 +64,7 @@ import metamaskSnapSVG from "@/assets/icon/metamaskSnap.svg";
 import MeteorSnapSvg from "@/assets/icon/meteor-snap.svg";
 import MeteorWalletSvg from "@/assets/icon/meteor-wallet.svg";
 import MeteorWebSvg from "@/assets/icon/meteor-web.svg";
-import meteorWalletScreenshotSVG from "@/assets/icon/meteorWalletScreenshot.svg";
+import meteorWalletScreenshotImg from "@/assets/icon/meteorWalletScreenshot.png";
 import walletConnectSVG from "@/assets/icon/walletConnect.svg";
 import { uuid } from "@/utils/uuid";
 
@@ -806,7 +806,7 @@ const MeteorWalletDetail = ({
             your credentials, attestations, licenses, event tickets, and more —
             all in one place
           </div>
-          <img src={meteorWalletScreenshotSVG} className='screenshot' />
+          <img src={meteorWalletScreenshotImg} className='screenshot' />
           <div className='tip'>Don&#39;t have Meteor wallet?</div>
           <div
             className='install'
