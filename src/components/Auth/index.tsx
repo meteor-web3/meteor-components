@@ -51,6 +51,7 @@ import {
 import { MessageTypes, message } from "../Message";
 import { FullScreenModal } from "../Modal";
 
+import addToSVG from "@/assets/icon/addTo.svg";
 import aggregatorSVG from "@/assets/icon/aggregator.svg";
 import authenticatorSVG from "@/assets/icon/authenticator.svg";
 import closeSVG from "@/assets/icon/close2.svg";
@@ -65,6 +66,7 @@ import MeteorSnapSvg from "@/assets/icon/meteor-snap.svg";
 import MeteorWalletSvg from "@/assets/icon/meteor-wallet.svg";
 import MeteorWebSvg from "@/assets/icon/meteor-web.svg";
 import meteorWalletScreenshotImg from "@/assets/icon/meteorWalletScreenshot.png";
+import meteorSnapScreenshotSVG from "@/assets/icon/meteorSnapScreenshot.svg";
 import walletConnectSVG from "@/assets/icon/walletConnect.svg";
 import { uuid } from "@/utils/uuid";
 
@@ -506,6 +508,8 @@ export const Auth = ({
     } catch (e: any) {
       console.warn(e);
       setConnectRes(undefined);
+      setSelectedProvider(undefined);
+      setConnectedWallet(undefined);
     } finally {
       setConnecting(false);
       setAutoConnecting(false);
@@ -647,10 +651,10 @@ const WalletList = ({ walletConfig, onChange }: WalletListProps) => {
               : "grey"};
           `}
           data-disabled={walletConfig?.enabled?.dataverseSnap === false}
-          data-unavailable={true}
+          // data-unavailable={true}
           onClick={() => {
-            // handleConnectWallet(WALLET.METAMASK)
-            message.info("Coming soon...");
+            setSelectedProvider("meteor-snap");
+            // message.info("Coming soon...");
           }}
         >
           <img className='wallet-logo' src={MeteorSnapSvg} />
@@ -735,9 +739,11 @@ const Detail = ({
   onClose,
 }: DetailProps) => {
   const [isMeteorInstalled, setIsMeteorInstalled] = useState(false);
+  const [isMeteorSnapInstalled, setIsMeteorSnapInstalled] = useState(false);
 
   useEffect(() => {
     detectMeteorExtension().then(res => setIsMeteorInstalled(res));
+    setIsMeteorSnapInstalled(false);
   }, []);
 
   return (
@@ -753,7 +759,10 @@ const Detail = ({
           ) : selectedProvider === "meteor-web" ? (
             <MeteorWebDetail handleConnectWallet={handleConnectWallet} />
           ) : selectedProvider === "meteor-snap" ? (
-            <MeteorSnapDetail handleConnectWallet={handleConnectWallet} />
+            <MeteorSnapDetail
+              isMeteorSnapInstalled={isMeteorSnapInstalled}
+              handleConnectWallet={handleConnectWallet}
+            />
           ) : (
             <DefaultDetail />
           )}
@@ -851,29 +860,50 @@ const MeteorWebDetail = ({
 
 const MeteorSnapDetail = ({
   handleConnectWallet,
+  isMeteorSnapInstalled,
 }: {
   handleConnectWallet: (wallet: SupportedWallet) => void;
+  isMeteorSnapInstalled?: boolean;
 }) => {
   return (
     <MeteorSnapDetailContainer>
-      <div className='description'>
-        Meteor Web allows you to sign once and keep connected after. It is the
-        most seemless way to
-        <br /> login.
-      </div>
+      {isMeteorSnapInstalled ? (
+        <div>
+          {innerWalletList
+            .filter(item => item.wallet === WALLET.METAMASK)
+            .map(item => (
+              <div
+                key={item.wallet}
+                onClick={() =>
+                  handleConnectWallet(item.wallet as SupportedWallet)
+                }
+                className='innerWalletItem'
+              >
+                <img src={item.logo} />
+                <div className='name'>{item.name}</div>
+              </div>
+            ))}
+        </div>
+      ) : (
+        <>
+          <div className='description'>
+            Data wallet lives in MetaMask as a snap. You can install it in
+            MetaMask and use it anytime.manage your credentials, attestations,
+          </div>
 
-      <img src={metamaskSnapSVG} />
-      {/* <div className='name'>{item.name}</div> */}
-
-      <img src={metamaskSnapSVG} className='screenshot' />
-      <div className='tip'>Don&#39;t have Meteor wallet?</div>
-      <div
-        className='install'
-        onClick={() => window.open(process.env.METEOR_GOOGLE_STORE)}
-      >
-        <img src={downloadSVG} className='download' />
-        Add to MetaMask
-      </div>
+          <img src={meteorSnapScreenshotSVG} className='screenshot' />
+          <div className='tip'>Not installed yet?</div>
+          <div
+            className='install'
+            onClick={() => {
+              message.info("Coming soon...");
+            }}
+          >
+            <img src={addToSVG} />
+            Add to MetaMask
+          </div>
+        </>
+      )}
     </MeteorSnapDetailContainer>
   );
 };

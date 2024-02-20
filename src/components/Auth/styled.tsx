@@ -141,7 +141,7 @@ export const WalletListContainer = styled(motion.div)`
     transition: background-color 200ms ease 0s;
     cursor: pointer;
     /* border: 1px solid hsl(0, 0%, 92%); */
-    
+
     &:hover {
       background-color: #007aff;
       color: white;
@@ -195,7 +195,7 @@ export const DetailContainer = styled(motion.div)`
   .aggregator-box,
   .authenticator-box {
     display: flex;
-    padding: 10px 49px;
+    padding: 15px 49px;
     .sub-title {
       color: #232325;
       font-family: Manrope-Bold;
@@ -383,9 +383,7 @@ export const MeteorSnapDetailContainer = styled(motion.div)`
   width: 100%;
   display: flex;
   flex-direction: column;
-
   .description {
-    padding-bottom: 36px;
     text-align: left;
     color: #232325;
     font-family: Manrope;
@@ -393,5 +391,61 @@ export const MeteorSnapDetailContainer = styled(motion.div)`
     font-style: normal;
     font-weight: 400;
     line-height: normal;
+  }
+  .screenshot {
+    width: fit-content;
+    margin: 67px auto 58px;
+  }
+  .tip {
+    color: #232325;
+    text-align: center;
+    font-family: Manrope-SemiBold;
+    font-size: 18px;
+    font-style: normal;
+    font-weight: 600;
+    line-height: normal;
+  }
+
+  .install {
+    display: flex;
+    /* width: 210px; */
+    padding: 4px 17px;
+    margin: 14px auto 0;
+    justify-content: center;
+    align-items: center;
+    gap: 16px;
+    border-radius: 100px;
+    background: #007aff;
+    color: var(--light-white, #fff);
+    font-family: Manrope;
+    font-size: 16px;
+    font-style: normal;
+    font-weight: 400;
+    line-height: 32px; /* 200% */
+    cursor: pointer;
+  }
+
+  .innerWalletItem {
+    display: flex;
+    width: 419.561px;
+    height: 51.585px;
+    padding: 11.177px 273.36px 11.177px 20.634px;
+    align-items: flex-start;
+    gap: 16.335px;
+    flex-shrink: 0;
+    border-radius: 8.598px;
+    background: #f9f9fa;
+    margin-bottom: 14px;
+    cursor: pointer;
+
+    .name {
+      white-space: nowrap;
+      color: #404f62;
+      font-family: Manrope-SemiBold;
+      font-size: 16px;
+      font-style: normal;
+      font-weight: 600;
+      line-height: 30px; /* 171.951% */
+    }
   }
 `;
