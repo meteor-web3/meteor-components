@@ -65,8 +65,8 @@ import metamaskSnapSVG from "@/assets/icon/metamaskSnap.svg";
 import MeteorSnapSvg from "@/assets/icon/meteor-snap.svg";
 import MeteorWalletSvg from "@/assets/icon/meteor-wallet.svg";
 import MeteorWebSvg from "@/assets/icon/meteor-web.svg";
-import meteorWalletScreenshotImg from "@/assets/icon/meteorWalletScreenshot.png";
 import meteorSnapScreenshotSVG from "@/assets/icon/meteorSnapScreenshot.svg";
+import meteorWalletScreenshotImg from "@/assets/icon/meteorWalletScreenshot.png";
 import walletConnectSVG from "@/assets/icon/walletConnect.svg";
 import { uuid } from "@/utils/uuid";
 
