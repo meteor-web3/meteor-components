@@ -20,23 +20,17 @@ import {
   useAction,
 } from "@meteor-web3/hooks";
 import { detectMeteorExtension } from "@meteor-web3/utils";
-import ArrowBackIcon from "@mui/icons-material/ArrowBack";
-import CancelOutlinedIcon from "@mui/icons-material/CancelOutlined";
 import { Tooltip, CircularProgress } from "@mui/material";
-import {
-  AuthType,
-  ParticleNetwork,
-  WalletEntryPosition,
-} from "@particle-network/auth";
+import { AuthType, ParticleNetwork } from "@particle-network/auth";
 import { ParticleProvider } from "@particle-network/provider";
-// import {
-//   PrivyProvider,
-//   usePrivy,
-//   useLogin,
-//   useLogout,
-//   useWallets,
-//   useCreateWallet,
-// } from "@privy-io/react-auth";
+import {
+  PrivyProvider,
+  usePrivy,
+  useLogin,
+  useLogout,
+  useWallets,
+  useCreateWallet,
+} from "@privy-io/react-auth";
 import { EthereumProvider } from "@walletconnect/ethereum-provider";
 import ReactDOM from "react-dom";
 
@@ -76,7 +70,11 @@ export type WalletConfig = {
     meteorWallet?: boolean;
     meteorWeb?: boolean;
   };
-  // privyAppId?: string;
+  /**
+   * use your own appId to make sure connect successfully
+   * test appId is only for localhost:3000
+   */
+  privyAppId?: string;
 };
 
 export type StyleConfig = {
@@ -242,7 +240,23 @@ const getWalletConnectProvider = async () => {
   return client;
 };
 
-export const Auth = ({
+export const Auth = (args: AuthProps) => {
+  return (
+    <PrivyProvider
+      // use your own appId to make sure connect successfully
+      // this test appId is only for localhost:3000
+      appId={args.walletConfig?.privyAppId || "cltxwbhkd0d395cw9mnuuej7l"}
+      config={{
+        loginMethods: ["google", "twitter", "github", "discord"],
+        embeddedWallets: { createOnLogin: "users-without-wallets" },
+      }}
+    >
+      <InnerAuth {...args} />
+    </PrivyProvider>
+  );
+};
+
+export const InnerAuth = ({
   appId,
   walletConfig = {
     enabled: { dataverseSnap: true, meteorWallet: true, meteorWeb: true },
@@ -272,6 +286,34 @@ export const Auth = ({
     | MeteorContextType
     | undefined;
   const { actionConnectWallet, actionCreateCapability } = useAction();
+
+  // privy
+  const [waitForPrivyConnecting, setWaitForPrivyConnecting] =
+    useState<boolean>(false);
+  const { ready: privyReady, authenticated: privyAuthenticated } = usePrivy();
+  const { wallets: privyWallets } = useWallets();
+  const { login: privyLogin } = useLogin();
+  const { logout: privyLogout } = useLogout();
+  const { createWallet: privyCreateWallet } = useCreateWallet();
+  const getPrivyProvider = async () => {
+    if (!privyReady) {
+      throw "Privy is not ready, please waiting...";
+    }
+    const embededWallet = privyWallets.find(
+      wallet => wallet.walletClientType === "privy",
+    );
+    if (!embededWallet) {
+      setWaitForPrivyConnecting(true);
+      if (!privyAuthenticated) {
+        privyLogin();
+      } else {
+        privyCreateWallet();
+      }
+      return;
+    } else {
+      return await embededWallet.getEthereumProvider();
+    }
+  };
 
   const handleInitConnector = async (providerType?: SupportedProvider) => {
     // init provider and connector
@@ -375,7 +417,9 @@ export const Auth = ({
         let ethereumProvider: any;
         switch (wallet) {
           case "Google":
-            ethereumProvider = await getParticleProvider();
+            // ethereumProvider = await getParticleProvider();
+            ethereumProvider = await getPrivyProvider();
+            if (!ethereumProvider) return;
             break;
           case WALLET.METAMASK:
             ethereumProvider = getMetamaskProvider();
@@ -456,7 +500,8 @@ export const Auth = ({
         let ethereumProvider: any;
         switch (walletType) {
           case "Google":
-            ethereumProvider = await getParticleProvider();
+            ethereumProvider = await getPrivyProvider();
+            if (!ethereumProvider) return;
             break;
           case WALLET.METAMASK:
             ethereumProvider = getMetamaskProvider();
@@ -511,6 +556,23 @@ export const Auth = ({
       setAutoConnecting(false);
     }
   };
+
+  // handle privy connect
+  useEffect(() => {
+    const embededWallet = privyWallets.find(
+      wallet => wallet.walletClientType === "privy",
+    );
+    if (embededWallet && waitForPrivyConnecting) {
+      setWaitForPrivyConnecting(false);
+      handleConnectWallet("Google", "meteor-web");
+    }
+  }, [privyWallets, handleConnectWallet]);
+  useEffect(() => {
+    const url = new URLSearchParams(location.search);
+    if (url.get("privy_oauth_code")) {
+      setSelectedProvider("meteor-web");
+    }
+  }, []);
 
   // handle pre-load of meteor-iframe
   useEffect(() => {
@@ -567,15 +629,6 @@ export const Auth = ({
   ]);
 
   return (
-    // <PrivyProvider
-    //   // use your own appId to make sure connect successfully
-    //   // this test appId is only for localhost:3000
-    //   appId={walletConfig?.privyAppId || "clpispdty00ycl80fpueukbhl"}
-    //   config={{
-    //     loginMethods: ["google", "twitter", "github", "apple", "discord"],
-    //     embeddedWallets: { createOnLogin: "users-without-wallets" },
-    //   }}
-    // >
     <EmbedWalletContainer
       style={{
         ...(styleConfig.hidden && { display: "none" }),
@@ -586,7 +639,7 @@ export const Auth = ({
       transition={{ duration: 0.15 }}
     >
       <div className='wallet-list'>
-        <div className='top-tip'>Connect data wallet</div>
+        <div className='top-tip'>Sign in with</div>
         {/* <div className='tip'>Prevalent</div> */}
         {/* {connectRes && (
           <div className='connected'>
@@ -596,6 +649,7 @@ export const Auth = ({
         )} */}
         <WalletList
           walletConfig={walletConfig}
+          providerType={selectedProvider}
           onChange={setSelectedProvider}
         />
       </div>
@@ -608,22 +662,31 @@ export const Auth = ({
         />
       </div>
     </EmbedWalletContainer>
-    // </PrivyProvider>
   );
 };
 
 interface WalletListProps {
   walletConfig?: WalletConfig;
+  providerType?: SupportedProvider;
   onChange?: (provider?: SupportedProvider) => void;
 }
 
 // pure-ui
-const WalletList = ({ walletConfig, onChange }: WalletListProps) => {
+const WalletList = ({
+  walletConfig,
+  providerType,
+  onChange,
+}: WalletListProps) => {
   const [selectedProvider, setSelectedProvider] = useState<SupportedProvider>();
 
   useEffect(() => {
     onChange?.(selectedProvider);
   }, [selectedProvider]);
+  useEffect(() => {
+    if (providerType) {
+      setSelectedProvider(providerType);
+    }
+  }, [providerType]);
 
   const walletProviders = (
     <>
@@ -821,9 +884,8 @@ const MeteorWalletDetail = ({
       ) : (
         <div>
           <div className='description'>
-            Meteor Wallet is a browser extension to securely store and manage
-            your credentials, attestations, licenses, event tickets, and more —
-            all in one place
+            Connect personal cloud with browser extension. The most secure way
+            to manage your data resources, file keys, app sessions locally.
           </div>
           <img src={meteorWalletScreenshotImg} className='screenshot' />
           <div className='tip'>Don&#39;t have Meteor wallet?</div>
@@ -848,20 +910,28 @@ const MeteorWebDetail = ({
   return (
     <MeteorWebDetailContainer>
       <div className='description'>
-        Meteor Web allows you to sign once and keep connected after. It is the
-        most seemless way to login.
+        The most seemless way to login. Connect apps and personal cloud with a
+        secure iframe. Session keys are only used in memory.
       </div>
       <div>
-        {innerWalletList.map(item => (
-          <div
-            key={item.wallet}
-            onClick={() => handleConnectWallet(item.wallet as SupportedWallet)}
-            className='innerWalletItem'
-          >
-            <img src={item.logo} />
-            <div className='name'>{item.name}</div>
-          </div>
-        ))}
+        {innerWalletList
+          .map(item =>
+            item.wallet === "Google"
+              ? { ...item, name: "Web2 Social (Privy)" }
+              : item,
+          )
+          .map(item => (
+            <div
+              key={item.wallet}
+              onClick={() =>
+                handleConnectWallet(item.wallet as SupportedWallet)
+              }
+              className='innerWalletItem'
+            >
+              <img src={item.logo} />
+              <div className='name'>{item.name}</div>
+            </div>
+          ))}
       </div>
     </MeteorWebDetailContainer>
   );
@@ -896,8 +966,8 @@ const MeteorSnapDetail = ({
       ) : (
         <>
           <div className='description'>
-            Data wallet lives in MetaMask as a snap. You can install it in
-            MetaMask and use it anytime.manage your credentials, attestations,
+            Connect personal cloud with your existing Metamask. Install the Snap
+            and make your data portable with Metamask.
           </div>
 
           <img src={meteorSnapScreenshotSVG} className='screenshot' />
@@ -920,23 +990,23 @@ const MeteorSnapDetail = ({
 const DefaultDetail = () => {
   return (
     <div>
-      <div className='title'>What is Dataverse Wallet?</div>
+      <div className='title'>What is Data Wallet?</div>
       <div className='aggregator-box'>
         <img src={aggregatorSVG} />
         <div>
-          <div className='sub-title'>A Home for your Data Assets</div>
+          <div className='sub-title'>A Home for Data Assets</div>
           <div className='sub-description'>
-            Wallet is used to securely store your identity, attestations and
-            credentials for your personal data.
+            Data wallet where you can store, visualize and monetize your online
+            data.
           </div>
         </div>
       </div>
       <div className='authenticator-box'>
         <img src={authenticatorSVG} />
         <div>
-          <div className='sub-title'>A New Way to Sign In</div>
+          <div className='sub-title'>The Portal to Web3</div>
           <div className='sub-description'>
-            Wallet works as a dApp <br /> authenticator.
+            Sign once and keep connected with the dapp authenticator.
           </div>
         </div>
       </div>
