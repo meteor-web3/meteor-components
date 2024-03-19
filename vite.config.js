@@ -30,7 +30,7 @@ const config = defineConfig({
   base: process.env.NODE_ENV === "production" ? "/" : "/",
   build: {
     target: "modules",
-    minify: false,
+    minify: true,
     rollupOptions: {
       external: ["react", "react-dom", "react/jsx-runtime", "@emotion/react", "@emotion/react/jsx-runtime", "@emotion/styled"],
       plugins: [
@@ -44,6 +44,7 @@ const config = defineConfig({
           format: 'es',
           entryFileNames: '[name].js',
           preserveModules: true,
+          sourcemap: false,
           dir: 'dist/esm',
           preserveModulesRoot: 'src'
         },
@@ -51,6 +52,7 @@ const config = defineConfig({
           format: 'cjs',
           entryFileNames: '[name].js',
           preserveModules: true,
+          sourcemap: false,
           dir: 'dist/cjs',
           preserveModulesRoot: 'src'
         }

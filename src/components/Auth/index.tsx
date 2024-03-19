@@ -311,10 +311,6 @@ export const Auth = ({
     } else {
       meteorConnector.setProvider(baseProvider);
     }
-    if (meteorContext?.setConnector) {
-      const { setConnector } = meteorContext;
-      setConnector(meteorConnector);
-    }
   };
 
   const getConnectingAppId = async () => {
@@ -491,7 +487,7 @@ export const Auth = ({
           const connectRes = await meteorConnector.connectWallet({
             wallet: connectResult.wallet,
           });
-          const pkh = meteorConnector.getCurrentPkh();
+          const pkh = await meteorConnector.getCurrentPkh();
           if (meteorContext?.dispatch) {
             actionConnectWallet(connectResult);
             actionCreateCapability({ pkh, appId: connectAppId });
@@ -515,6 +511,20 @@ export const Auth = ({
       setAutoConnecting(false);
     }
   };
+
+  // handle pre-load of meteor-iframe
+  useEffect(() => {
+    if (walletConfig.enabled?.meteorWeb) {
+      import("@meteor-web3/meteor-iframe");
+    }
+  }, [walletConfig.enabled?.meteorWeb]);
+
+  // adapt meteor-hooks
+  useEffect(() => {
+    if (meteorContext?.connector) {
+      meteorConnector = meteorContext.connector;
+    }
+  }, [meteorContext?.connector]);
 
   // handle cache of selectedProvider
   useEffect(() => {
@@ -839,8 +849,7 @@ const MeteorWebDetail = ({
     <MeteorWebDetailContainer>
       <div className='description'>
         Meteor Web allows you to sign once and keep connected after. It is the
-        most seemless way to
-        <br /> login.
+        most seemless way to login.
       </div>
       <div>
         {innerWalletList.map(item => (

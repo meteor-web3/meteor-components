@@ -1,6 +1,5 @@
 import { css } from "@emotion/react";
 
-import JuraVariableFont from "@/assets/font/Jura.ttf";
 import LatoBold from "@/assets/font/Lato-Bold.ttf";
 import LatoExtraBold from "@/assets/font/Lato-ExtraBold.ttf";
 import LatoMedium from "@/assets/font/Lato-Medium.ttf";
@@ -253,14 +252,6 @@ export const GlobalStyle = css`
     font-style: normal;
     src: url(${PoppinsExtraBold});
   }
-
-  /* @font-face {
-            font-family: Jura;
-            font-style: normal;
-            font-weight: 500;
-            letter-spacing: 0.005em;
-            src: url(${JuraVariableFont});
-          } */
 
   *,
   *::before,
