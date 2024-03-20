@@ -65,11 +65,13 @@ import walletConnectSVG from "@/assets/icon/walletConnect.svg";
 import { uuid } from "@/utils/uuid";
 
 export type WalletConfig = {
-  enabled?: {
-    dataverseSnap?: boolean;
-    meteorWallet?: boolean;
-    meteorWeb?: boolean;
-  };
+  enabled?:
+    | {
+        dataverseSnap?: boolean;
+        meteorWallet?: boolean;
+        meteorWeb?: boolean;
+      }
+    | true;
   /**
    * use your own appId to make sure connect successfully
    * test appId is only for localhost:3000
@@ -260,6 +262,7 @@ export const InnerAuth = ({
   appId,
   walletConfig = {
     enabled: { dataverseSnap: true, meteorWallet: true, meteorWeb: true },
+    privyAppId: process.env.PRIVY_APPID || "cltxwbhkd0d395cw9mnuuej7l",
   },
   styleConfig = {
     hidden: false,
@@ -534,15 +537,15 @@ export const InnerAuth = ({
           });
           const pkh = await meteorConnector.getCurrentPkh();
           if (meteorContext?.dispatch) {
-            actionConnectWallet(connectResult);
+            actionConnectWallet(connectRes);
             actionCreateCapability({ pkh, appId: connectAppId });
           }
           setConnectRes({ ...connectRes, pkh });
           onConnectSucceed?.(meteorConnector, { ...connectRes, pkh });
           setConnectedWallet(
-            connectResult.wallet === WALLET.PARTICLE
+            connectRes.wallet === WALLET.PARTICLE
               ? "Google"
-              : (connectResult.wallet as SupportedWallet),
+              : (connectRes.wallet as SupportedWallet),
           );
         }
       }
@@ -576,10 +579,10 @@ export const InnerAuth = ({
 
   // handle pre-load of meteor-iframe
   useEffect(() => {
-    if (walletConfig.enabled?.meteorWeb) {
+    if (walletConfig.enabled === true || walletConfig.enabled?.meteorWeb) {
       import("@meteor-web3/meteor-iframe");
     }
-  }, [walletConfig.enabled?.meteorWeb]);
+  }, [walletConfig.enabled]);
 
   // adapt meteor-hooks
   useEffect(() => {
@@ -702,7 +705,10 @@ const WalletList = ({
             "#007aff !important"};
             color: ${selectedProvider === "meteor-wallet" && "#fff !important"};
           `}
-          data-disabled={walletConfig?.enabled?.meteorWallet === false}
+          data-disabled={
+            walletConfig?.enabled !== true &&
+            walletConfig?.enabled?.meteorWallet === false
+          }
           onClick={() => setSelectedProvider("meteor-wallet")}
         >
           <img className='wallet-logo' src={MeteorWalletSvg} />
@@ -723,7 +729,10 @@ const WalletList = ({
               ? "#fff !important"
               : "grey"};
           `}
-          data-disabled={walletConfig?.enabled?.dataverseSnap === false}
+          data-disabled={
+            walletConfig?.enabled !== true &&
+            walletConfig?.enabled?.dataverseSnap === false
+          }
           // data-unavailable={true}
           onClick={() => {
             setSelectedProvider("meteor-snap");
@@ -746,7 +755,10 @@ const WalletList = ({
             "#007aff !important"};
             color: ${selectedProvider === "meteor-web" && "#fff !important"};
           `}
-          data-disabled={walletConfig?.enabled?.meteorWeb === false}
+          data-disabled={
+            walletConfig?.enabled !== true &&
+            walletConfig?.enabled?.meteorWeb === false
+          }
           onClick={() => setSelectedProvider("meteor-web")}
         >
           <img className='wallet-logo' src={MeteorWebSvg} />
@@ -868,6 +880,10 @@ const MeteorWalletDetail = ({
     <MeteorWalletDetailContainer>
       {isMeteorInstalled ? (
         <div>
+          <div className='description'>
+            Meteor Wallet is a browser extension to securely store and manage
+            your session keys.
+          </div>
           {innerWalletList.map(item => (
             <div
               key={item.wallet}
