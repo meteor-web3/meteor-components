@@ -61,6 +61,7 @@ import MeteorWalletSvg from "@/assets/icon/meteor-wallet.svg";
 import MeteorWebSvg from "@/assets/icon/meteor-web.svg";
 import meteorSnapScreenshotSVG from "@/assets/icon/meteorSnapScreenshot.svg";
 import meteorWalletScreenshotImg from "@/assets/icon/meteorWalletScreenshot.png";
+import privySVG from "@/assets/icon/privy.svg";
 import walletConnectSVG from "@/assets/icon/walletConnect.svg";
 import { uuid } from "@/utils/uuid";
 
@@ -880,7 +881,7 @@ const MeteorWalletDetail = ({
     <MeteorWalletDetailContainer>
       {isMeteorInstalled ? (
         <div>
-          <div className='description'>
+          <div className='description' style={{ marginBottom: "36px" }}>
             Meteor Wallet is a browser extension to securely store and manage
             your session keys.
           </div>
@@ -892,7 +893,9 @@ const MeteorWalletDetail = ({
               }
               className='innerWalletItem'
             >
-              <img src={item.logo} />
+              <div className='logo'>
+                <img src={item.logo} />
+              </div>
               <div className='name'>{item.name}</div>
             </div>
           ))}
@@ -933,7 +936,7 @@ const MeteorWebDetail = ({
         {innerWalletList
           .map(item =>
             item.wallet === "Google"
-              ? { ...item, name: "Web2 Social (Privy)" }
+              ? { ...item, name: "Privy", logo: privySVG }
               : item,
           )
           .map(item => (
@@ -944,7 +947,9 @@ const MeteorWebDetail = ({
               }
               className='innerWalletItem'
             >
-              <img src={item.logo} />
+              <div className='logo'>
+                <img src={item.logo} />
+              </div>
               <div className='name'>{item.name}</div>
             </div>
           ))}
@@ -974,7 +979,9 @@ const MeteorSnapDetail = ({
                 }
                 className='innerWalletItem'
               >
-                <img src={item.logo} />
+                <div className='logo'>
+                  <img src={item.logo} />
+                </div>
                 <div className='name'>{item.name}</div>
               </div>
             ))}

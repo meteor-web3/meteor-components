@@ -324,6 +324,18 @@ export const MeteorWalletDetailContainer = styled(motion.div)`
     margin-bottom: 14px;
     cursor: pointer;
 
+    .logo {
+      width: 30px;
+      height: 30px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      img {
+        width: 30px;
+        height: 30px;
+      }
+    }
+
     .name {
       white-space: nowrap;
       color: #404f62;
@@ -365,6 +377,18 @@ export const MeteorWebDetailContainer = styled(motion.div)`
     background: #f9f9fa;
     margin-bottom: 14px;
     cursor: pointer;
+
+    .logo {
+      width: 30px;
+      height: 30px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      img {
+        width: 30px;
+        height: 30px;
+      }
+    }
 
     .name {
       white-space: nowrap;
@@ -437,6 +461,18 @@ export const MeteorSnapDetailContainer = styled(motion.div)`
     background: #f9f9fa;
     margin-bottom: 14px;
     cursor: pointer;
+
+    .logo {
+      width: 30px;
+      height: 30px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      img {
+        width: 30px;
+        height: 30px;
+      }
+    }
 
     .name {
       white-space: nowrap;
