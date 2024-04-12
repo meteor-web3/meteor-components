@@ -43,7 +43,7 @@ const config = defineConfig({
         {
           format: 'es',
           entryFileNames: '[name].js',
-          preserveModules: true,
+          preserveModules: false,
           sourcemap: false,
           dir: 'dist/esm',
           preserveModulesRoot: 'src'
@@ -51,7 +51,7 @@ const config = defineConfig({
         {
           format: 'cjs',
           entryFileNames: '[name].js',
-          preserveModules: true,
+          preserveModules: false,
           sourcemap: false,
           dir: 'dist/cjs',
           preserveModulesRoot: 'src'
