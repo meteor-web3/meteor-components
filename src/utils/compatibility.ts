@@ -50,3 +50,8 @@ export function isChrome(): boolean {
   }
   return false;
 }
+
+export function isBrave(): boolean {
+  const isBrave: boolean = !!(navigator as any).brave;
+  return isBrave;
+}

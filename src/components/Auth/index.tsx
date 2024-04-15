@@ -20,7 +20,17 @@ import {
   useAction,
 } from "@meteor-web3/hooks";
 import { detectMeteorExtension } from "@meteor-web3/utils";
-import { Tooltip, CircularProgress } from "@mui/material";
+import ErrorIcon from "@mui/icons-material/Error";
+import {
+  Tooltip,
+  CircularProgress,
+  Chip,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  Button,
+} from "@mui/material";
 import { AuthType, ParticleNetwork } from "@particle-network/auth";
 import { ParticleProvider } from "@particle-network/provider";
 import {
@@ -43,7 +53,7 @@ import {
   MeteorSnapDetailContainer,
 } from "./styled";
 import { MessageTypes, message } from "../Message";
-import { FullScreenModal } from "../Modal";
+import { ConfirmModal, FullScreenModal } from "../Modal";
 
 import addToSVG from "@/assets/icon/addTo.svg";
 import aggregatorSVG from "@/assets/icon/aggregator.svg";
@@ -63,6 +73,7 @@ import meteorSnapScreenshotSVG from "@/assets/icon/meteorSnapScreenshot.svg";
 import meteorWalletScreenshotImg from "@/assets/icon/meteorWalletScreenshot.png";
 import privySVG from "@/assets/icon/privy.svg";
 import walletConnectSVG from "@/assets/icon/walletConnect.svg";
+import { isBrave } from "@/utils/compatibility";
 import { uuid } from "@/utils/uuid";
 
 export type WalletConfig = {
@@ -292,8 +303,9 @@ export const InnerAuth = ({
   const { actionConnectWallet, actionCreateCapability } = useAction();
 
   // privy
-  const [waitForPrivyConnecting, setWaitForPrivyConnecting] =
-    useState<boolean>(false);
+  const [waitForPrivyConnecting, setWaitForPrivyConnecting] = useState<
+    "ready" | "authenticated" | "wallet" | false
+  >(false);
   const { ready: privyReady, authenticated: privyAuthenticated } = usePrivy();
   const { wallets: privyWallets } = useWallets();
   const { login: privyLogin } = useLogin();
@@ -301,16 +313,18 @@ export const InnerAuth = ({
   const { createWallet: privyCreateWallet } = useCreateWallet();
   const getPrivyProvider = async () => {
     if (!privyReady) {
-      throw "Privy is not ready, please waiting...";
+      setWaitForPrivyConnecting("ready");
+      return;
     }
     const embededWallet = privyWallets.find(
       wallet => wallet.walletClientType === "privy",
     );
     if (!embededWallet) {
-      setWaitForPrivyConnecting(true);
       if (!privyAuthenticated) {
+        setWaitForPrivyConnecting("authenticated");
         privyLogin();
       } else {
+        setWaitForPrivyConnecting("wallet");
         privyCreateWallet();
       }
       return;
@@ -550,14 +564,15 @@ export const InnerAuth = ({
           );
         }
       }
+      setAutoConnecting(false);
     } catch (e: any) {
       console.warn(e);
       setConnectRes(undefined);
       setSelectedProvider(undefined);
       setConnectedWallet(undefined);
+      setAutoConnecting(false);
     } finally {
       setConnecting(false);
-      setAutoConnecting(false);
     }
   };
 
@@ -566,11 +581,27 @@ export const InnerAuth = ({
     const embededWallet = privyWallets.find(
       wallet => wallet.walletClientType === "privy",
     );
-    if (embededWallet && waitForPrivyConnecting) {
-      setWaitForPrivyConnecting(false);
-      handleConnectWallet("Google", "meteor-web");
+    let handleNext = false;
+    switch (waitForPrivyConnecting) {
+      case "ready":
+        if (privyReady) handleNext = true;
+        break;
+      case "authenticated":
+        if (privyAuthenticated) handleNext = true;
+        break;
+      case "wallet":
+        if (embededWallet) handleNext = true;
+        break;
     }
-  }, [privyWallets, handleConnectWallet]);
+    if (handleNext) {
+      setWaitForPrivyConnecting(false);
+      if (autoConnecting) {
+        handleAutoConnect("meteor-web", "Google");
+      } else {
+        handleConnectWallet("Google", "meteor-web");
+      }
+    }
+  }, [privyReady, privyAuthenticated, privyWallets, handleConnectWallet]);
   useEffect(() => {
     const url = new URLSearchParams(location.search);
     if (url.get("privy_oauth_code")) {
@@ -926,11 +957,70 @@ const MeteorWebDetail = ({
 }: {
   handleConnectWallet: (wallet: SupportedWallet) => void;
 }) => {
+  const [braveWarning, setBraveWarning] = useState<boolean>(
+    !JSON.parse(localStorage.getItem("AUTH_NO_BRAVE_WARNING") || "false"),
+  );
+  const [warningDialog, setWarningDialog] = useState<boolean>(false);
+
   return (
     <MeteorWebDetailContainer>
       <div className='description'>
-        The most seemless way to login. Connect apps and personal cloud with a
-        secure iframe. Session keys are only used in memory.
+        {isBrave() && braveWarning && (
+          <p style={{ marginTop: "-65px", marginBottom: "33px" }}>
+            <Tooltip
+              title={`In the Brave browser, due to browser security restrictions, you need to change the default settings to make Meteor-Web run properly. We can only help you copy the URL of the settings page to the clipboard, and then you need to manually enter it in the browser navigator bar. And turn on "Allow third-party cookies".`}
+              placement='right'
+              arrow
+            >
+              <Chip
+                icon={<ErrorIcon />}
+                label='Warning'
+                color='warning'
+                onClick={async () => {
+                  await navigator.clipboard.writeText(
+                    "brave://settings/cookies",
+                  );
+                  message.success("Copied the setting page url to clipboard.");
+                }}
+                onDelete={() => setWarningDialog(true)}
+              />
+            </Tooltip>
+            <Dialog
+              open={warningDialog}
+              onClose={() => setWarningDialog(false)}
+            >
+              <DialogTitle>Turn off warning?</DialogTitle>
+              <DialogContent>
+                Close this time or never remind again (unless you clear the
+                website cache)
+              </DialogContent>
+              <DialogActions>
+                <Button
+                  onClick={() => {
+                    setBraveWarning(false);
+                    setWarningDialog(false);
+                  }}
+                >
+                  Close this time
+                </Button>
+                <Button
+                  color='error'
+                  onClick={() => {
+                    localStorage.setItem("AUTH_NO_BRAVE_WARNING", "true");
+                    setBraveWarning(false);
+                    setWarningDialog(false);
+                  }}
+                >
+                  Never remind again
+                </Button>
+              </DialogActions>
+            </Dialog>
+          </p>
+        )}
+        <p>
+          The most seemless way to login. Connect apps and personal cloud with a
+          secure iframe. Session keys are only used in memory.
+        </p>
       </div>
       <div>
         {innerWalletList

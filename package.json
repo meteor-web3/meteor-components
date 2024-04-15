@@ -1,6 +1,6 @@
 {
   "name": "@meteor-web3/components",
-  "version": "1.0.31",
+  "version": "1.0.34",
   "types": "dist/esm/index.d.ts",
   "main": "dist/cjs/index.js",
   "module": "dist/esm/index.js",
