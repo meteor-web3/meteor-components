@@ -20,7 +20,6 @@ import {
   useAction,
 } from "@meteor-web3/hooks";
 import { detectMeteorExtension } from "@meteor-web3/utils";
-import ErrorIcon from "@mui/icons-material/Error";
 import {
   Tooltip,
   CircularProgress,
@@ -325,7 +324,7 @@ export const InnerAuth = ({
         privyLogin();
       } else {
         setWaitForPrivyConnecting("wallet");
-        privyCreateWallet();
+        privyCreateWallet().catch(console.warn);
       }
       return;
     } else {
@@ -973,7 +972,6 @@ const MeteorWebDetail = ({
               arrow
             >
               <Chip
-                icon={<ErrorIcon />}
                 label='Warning'
                 color='warning'
                 onClick={async () => {

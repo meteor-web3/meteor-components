@@ -1,6 +1,6 @@
 {
   "name": "@meteor-web3/components",
-  "version": "1.0.34",
+  "version": "1.0.37",
   "types": "dist/esm/index.d.ts",
   "main": "dist/cjs/index.js",
   "module": "dist/esm/index.js",
@@ -23,19 +23,19 @@
   "peerDependencies": {
     "@emotion/react": "^11.9.3",
     "@emotion/styled": "^11.9.3",
-    "@meteor-web3/connector": "^1.0.36",
+    "@meteor-web3/connector": "^1.0.39",
     "@meteor-web3/hooks": "^1.0.22",
     "@meteor-web3/meteor-iframe": "^1.0.14",
     "react": "^17.0.2 || ^18.0.0",
     "react-dom": "^17.0.2 || ^18.0.0"
   },
   "dependencies": {
+    "@mui/icons-material": "^5.15.7",
+    "@mui/material": "^5.15.7",
     "@arcstone/arcstone-sdk": "^1.0.3",
     "@coinbase/wallet-sdk": "^3.7.2",
     "@emotion/is-prop-valid": "^1.2.1",
     "@meteor-web3/utils": "^1.0.4",
-    "@mui/icons-material": "^5.15.7",
-    "@mui/material": "^5.15.7",
     "@particle-network/auth": "^1.3.1",
     "@particle-network/provider": "^1.3.2",
     "@privy-io/react-auth": "^1.59.4",
